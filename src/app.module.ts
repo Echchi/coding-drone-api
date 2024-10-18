@@ -7,6 +7,7 @@ import { Students } from './students/students.entity';
 import { InstructorModule } from './instructor/instructor.module';
 import { LecturesModule } from './lectures/lectures.module';
 import { StudentsModule } from './students/students.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { StudentsModule } from './students/students.module';
     InstructorModule,
     LecturesModule,
     StudentsModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
