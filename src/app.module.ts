@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';  // 추가
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Instructor } from './instructor/instructor.entity';
-import { Lectures } from './lectures/lectures.entity';
-import { Students } from './students/students.entity';
+
 import { InstructorModule } from './instructor/instructor.module';
 import { LecturesModule } from './lectures/lectures.module';
 import { StudentsModule } from './students/students.module';
 import { AuthModule } from './auth/auth.module';
+import { Instructor } from './instructor/entities/instructor.entity';
+import { Lectures } from './lectures/entities/lectures.entitiy';
+import { Students } from './students/entities/students.entity';
 
 @Module({
   imports: [
