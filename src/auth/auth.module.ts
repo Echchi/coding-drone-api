@@ -9,7 +9,7 @@ import { InstructorModule } from '../instructor/instructor.module';
     InstructorModule,
     JwtModule.register({
       global: true,
-      secret: process.env.JWTSECRET,
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '60s' },
     }),
   ],

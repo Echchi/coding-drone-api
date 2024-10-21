@@ -20,7 +20,7 @@
   },
   "include": [
     "src/**/*.ts",
-    ".env"
+    "src/types/env.d.ts"
   ],
   "exclude": [
     "node_modules"
