@@ -1,8 +1,15 @@
 import { Injectable } from '@nestjs/common';
+import { Instructor } from './entities/instructor.entity';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class InstructorService {
-  async findOne(username: string) {
-
+  constructor(
+    @InjectRepository(Instructor)
+    private instructorRepository: Repository<Instructor>,
+  ) {}
+  async findOne(username: string): Promise<Instructor | undefined> {
+    return this.instructorRepository.findOne({ where: { username } });
   }
 }
