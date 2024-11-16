@@ -5,8 +5,8 @@ export class Instructor {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  username: string;
+  @Column({ unique: true })
+  userid: string;
 
   @Column()
   password: string;

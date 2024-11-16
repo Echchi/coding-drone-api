@@ -9,7 +9,7 @@ export class InstructorService {
     @InjectRepository(Instructor)
     private instructorRepository: Repository<Instructor>,
   ) {}
-  async findOne(username: string): Promise<Instructor | undefined> {
-    return this.instructorRepository.findOne({ where: { username } });
+  async findOne(userid: string): Promise<Instructor | undefined> {
+    return this.instructorRepository.findOne({ where: { userid: userid } });
   }
 }

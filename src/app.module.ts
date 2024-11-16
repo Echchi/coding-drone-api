@@ -9,6 +9,8 @@ import { AuthModule } from './auth/auth.module';
 import { Instructor } from './instructor/entities/instructor.entity';
 import { Lectures } from './lectures/entities/lectures.entitiy';
 import { Students } from './students/entities/students.entity';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -28,5 +30,7 @@ import { Students } from './students/entities/students.entity';
     StudentsModule,
     AuthModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

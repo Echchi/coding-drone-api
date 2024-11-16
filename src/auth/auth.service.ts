@@ -7,18 +7,18 @@ export class AuthService {
     private instructorService: InstructorService,
     private jwtService: JwtService,
   ) {}
-  async signIn(
-    username: string,
+  async logIn(
+    userid: string,
     password: string,
   ): Promise<{ access_token: string }> {
-    const instructor = await this.instructorService.findOne(username);
+    const instructor = await this.instructorService.findOne(userid);
     if (
       !instructor ||
       !(await this.validatePassword(password, instructor.password))
     ) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    const payload = { username: instructor.username, sub: instructor.id };
+    const payload = { userid: instructor.userid, sub: instructor.id };
     return {
       access_token: this.jwtService.sign(payload),
     };
