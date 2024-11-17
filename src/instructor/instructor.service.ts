@@ -12,4 +12,8 @@ export class InstructorService {
   async findOne(userid: string): Promise<Instructor | undefined> {
     return this.instructorRepository.findOne({ where: { userid: userid } });
   }
+  catch(error) {
+    console.error('Error finding instructor:', error);
+    throw new Error('Database error occurred while finding instructor');
+  }
 }
