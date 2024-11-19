@@ -1,17 +1,21 @@
 import { InstructorService } from '../instructor/instructor.service';
 import { JwtService } from '@nestjs/jwt';
-import { UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
+import { LoginDto } from './dto/login.dto';
 
+@Injectable()
 export class AuthService {
   constructor(
     private instructorService: InstructorService,
     private jwtService: JwtService,
   ) {}
-  async logIn(
-    userid: string,
-    password: string,
-  ): Promise<{ access_token: string }> {
+
+  async logIn(loginDto: LoginDto): Promise<{ access_token: string }> {
+    const { userid, password } = loginDto;
+    console.log('Login DTO:', loginDto);
     const instructor = await this.instructorService.findOne(userid);
+    console.log('Instructor Found:', instructor);
     if (
       !instructor ||
       !(await this.validatePassword(password, instructor.password))
@@ -19,15 +23,21 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
     const payload = { userid: instructor.userid, sub: instructor.id };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
+
+    const token = await this.generateToken(payload);
+    console.log('Generated Token:', token);
+
+    return { access_token: token };
   }
 
   private async validatePassword(
     inputPassword: string,
-    savedPassword: any,
+    savedPassword: string,
   ): Promise<boolean> {
-    return inputPassword === savedPassword;
+    return bcrypt.compare(inputPassword, savedPassword);
+  }
+
+  private async generateToken(payload: { userid: string; sub: number }) {
+    return this.jwtService.sign(payload);
   }
 }

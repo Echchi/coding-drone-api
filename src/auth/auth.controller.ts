@@ -1,6 +1,7 @@
 import { Body, Controller, Post, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { LoginDto } from './dto/login.dto';
 @ApiTags('Auth')
 @Controller()
 export class AuthController {
@@ -8,7 +9,8 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  signIn(@Body() signInDto: Record<string, any>) {
-    return this.authService.logIn(signInDto.username, signInDto.password);
+  @ApiBody({ type: LoginDto, description: '강사 로그인을 위한 api 입니다.' })
+  logIn(@Body() logInDto: LoginDto) {
+    return this.authService.logIn(logInDto);
   }
 }
