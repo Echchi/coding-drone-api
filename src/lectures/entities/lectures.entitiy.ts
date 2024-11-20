@@ -2,7 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { Instructor } from '../../instructor/entities/instructor.entity';
 
 @Entity()
-export class Lectures {
+export class Lecture {
   @PrimaryGeneratedColumn()
   id: number;
 

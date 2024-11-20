@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
-import { Lectures } from '../../lectures/entities/lectures.entitiy';
+import { Lecture } from '../../lectures/entities/lectures.entitiy';
 
 @Entity()
 export class Students {
@@ -12,6 +12,6 @@ export class Students {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   joined_at: Date;
 
-  @ManyToOne(() => Lectures, (lectures) => lectures.id)
-  lecture: Lectures;
+  @ManyToOne(() => Lecture, (lectures) => lectures.id)
+  lecture: Lecture;
 }
