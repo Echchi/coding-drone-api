@@ -48,7 +48,7 @@ describe('AuthController', () => {
       expect(result).toEqual({ accessToken: 'mockAccessToken' });
     });
 
-    it('should throw UnauthorizedException on valid credentials', async () => {
+    it('should throw UnauthorizedException on invalid credentials\n', async () => {
       const loginDto: LoginDto = {
         userid: 'invalidUser',
         password: 'wrongPassword',

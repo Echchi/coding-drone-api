@@ -2,14 +2,12 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { InstructorModule } from './instructor/instructor.module';
-import { LecturesModule } from './lectures/lectures.module';
-import { StudentsModule } from './students/students.module';
+import { LectureModule } from './lectures/lecture.module';
+import { StudentModule } from './student/student.module';
 import { AuthModule } from './auth/auth.module';
 import { Instructor } from './instructor/entities/instructor.entity';
-import { Lectures } from './lectures/entities/lectures.entitiy';
-import { Students } from './students/entities/students.entity';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { Lecture } from './lectures/entities/lectures.entitiy';
+import { Students } from './student/entities/student.entity';
 
 @Module({
   imports: [
@@ -23,14 +21,14 @@ import { AppService } from './app.service';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
-        entities: [Instructor, Lectures, Students],
+        entities: [Instructor, Lecture, Students],
         synchronize: true,
       }),
       inject: [ConfigService],
     }),
     InstructorModule,
-    LecturesModule,
-    StudentsModule,
+    LectureModule,
+    StudentModule,
     AuthModule,
   ],
 })
