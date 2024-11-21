@@ -1,9 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LectureService } from './lecture.service';
 import { Repository } from 'typeorm';
-import { Lecture } from './entities/lectures.entitiy';
+import { Lecture } from './entities/lecture.entitiy';
 import { Instructor } from '../instructor/entities/instructor.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { CreateDto, UpdateDto } from './dto/lecture.dto';
 
 describe('LectureService', () => {
   let service: LectureService;
@@ -37,11 +38,12 @@ describe('LectureService', () => {
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
-  describe('createLecture', () => {
+  describe('create', () => {
     it('should generate a unique lecture code and create a lecture with active status', async () => {
-      const instructorId = 1;
       const instructor = new Instructor();
-      instructor.id = instructorId;
+      const createDto: CreateDto = {
+        instructorId: 'test',
+      };
 
       const code = 'mockedCode123';
 
@@ -50,6 +52,7 @@ describe('LectureService', () => {
       const mockInsert = jest
         .spyOn(lectureRepository, 'insert')
         .mockImplementation(async (lecture) => ({
+          identifiers: [{ id: 1 }],
           generatedMaps: [],
           raw: [],
           affected: 1,
@@ -62,20 +65,22 @@ describe('LectureService', () => {
       });
     });
     it('should throw an error if instructor is not found', async () => {
-      const instructorId = 99;
+      const createDto: CreateDto = {
+        instructorId: 'tests',
+      };
       jest.spyOn(instructorRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.createLecture(instructorId)).rejects.toThrowError(
+      await expect(service.create(createDto)).rejects.toThrowError(
         'Instructor not found',
       );
     });
   });
-  describe('updateActive', () => {
+  describe('update', () => {
     it('should deactivate a lecture by setting active to false', async () => {
-      const lectureId = 1;
+      const updateDto: UpdateDto = {
+        lectureId: 1,
+      };
       const lecture = new Lecture();
-      lecture.id = lectureId;
-      lecture.active = true;
 
       jest.spyOn(lectureRepository, 'findOne').mockResolvedValue(lecture);
       const mockUpdate = jest
@@ -86,16 +91,18 @@ describe('LectureService', () => {
           affected: 1,
         });
 
-      await service.updateActive(lectureId, false);
+      await service.update(updateDto);
 
-      expect(mockUpdate).toHaveBeenCalledWith(lectureId, { active: false });
+      expect(mockUpdate).toHaveBeenCalledWith(updateDto);
     });
 
     it('should throw an error if lecture does not exist', async () => {
-      const lectureId = 99;
+      const updateDto: UpdateDto = {
+        lectureId: 1,
+      };
       jest.spyOn(lectureRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.updateActive(lectureId, false)).rejects.toThrowError(
+      await expect(service.update(updateDto)).rejects.toThrowError(
         'Lecture not found',
       );
     });
