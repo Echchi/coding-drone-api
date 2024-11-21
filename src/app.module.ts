@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { InstructorModule } from './instructor/instructor.module';
-import { LectureModule } from './lectures/lecture.module';
+import { LectureModule } from './lecture/lecture.module';
 import { StudentModule } from './student/student.module';
 import { AuthModule } from './auth/auth.module';
 import { Instructor } from './instructor/entities/instructor.entity';
-import { Lecture } from './lectures/entities/lectures.entitiy';
+import { Lecture } from './lecture/entities/lecture.entitiy';
 import { Students } from './student/entities/student.entity';
 
 @Module({
