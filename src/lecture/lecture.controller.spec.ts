@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LectureController } from './lecture.controller';
 import { LectureService } from './lecture.service';
-import { CreateDto, UpdateDto } from './dto/lecture.dto';
+import { LectureCreateDto, LectureUpdateDto } from './dto/lecture.dto';
 
 describe('LectureController', () => {
   let controller: LectureController;
@@ -30,18 +30,19 @@ describe('LectureController', () => {
   });
   describe('create', () => {
     it('should generate a unique lecture code and create a lecture with active status', async () => {
-      const createDto: CreateDto = {
+      const createDto: LectureCreateDto = {
         instructorId: 'test',
+        code: '00000',
       };
       const result = await controller.create(createDto);
 
       expect(mockLectureService.createLecture).toHaveBeenCalledWith(createDto);
-      expect(result).toBe('code123');
+      expect(result).toBe('00000');
     });
   });
   describe('update', () => {
     it('should deactivate a lecture by setting active to false', async () => {
-      const updateDto: UpdateDto = {
+      const updateDto: LectureUpdateDto = {
         lectureId: 1,
       };
 
@@ -52,7 +53,7 @@ describe('LectureController', () => {
       );
     });
     it('should throw an error if lecture does not exist', async () => {
-      const updateDto: UpdateDto = {
+      const updateDto: LectureUpdateDto = {
         lectureId: 9999,
       };
 
