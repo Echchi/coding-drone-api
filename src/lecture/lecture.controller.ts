@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { LectureService } from './lecture.service';
-import { LectureCreateDto, LectureUpdateDto } from './dto/lecture.dto';
+import { LectureCreateDto } from './dto/lecture.dto';
 
 @ApiTags('Lecture')
 @Controller('lecture')
@@ -16,7 +16,7 @@ export class LectureController {
   constructor(private lectureService: LectureService) {}
 
   @HttpCode(HttpStatus.OK)
-  @Get()
+  @Get('/generate-code')
   @ApiBody({
     description: '강의 코드 생성을 위한 api',
   })
