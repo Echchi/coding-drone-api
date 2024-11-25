@@ -1,7 +1,14 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+} from '@nestjs/common';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { LectureService } from './lecture.service';
-import { CreateDto, UpdateDto } from './dto/lecture.dto';
+import { LectureCreateDto } from './dto/lecture.dto';
 
 @ApiTags('Lecture')
 @Controller('lecture')
@@ -9,18 +16,30 @@ export class LectureController {
   constructor(private lectureService: LectureService) {}
 
   @HttpCode(HttpStatus.OK)
-  @Post('create')
-  @ApiBody({ type: CreateDto, description: '강의 생성을 위한 api 입니다.' })
-  create(@Body() createDto: CreateDto) {
+  @Get('/generate-code')
+  @ApiBody({
+    description: '강의 코드 생성을 위한 api',
+  })
+  generateCode() {
+    return this.lectureService.generateCode();
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post()
+  @ApiBody({
+    type: LectureCreateDto,
+    description: '강의 생성을 위한 api',
+  })
+  create(@Body() createDto: LectureCreateDto) {
     return this.lectureService.create(createDto);
   }
-  @HttpCode(HttpStatus.OK)
-  @Post('update')
-  @ApiBody({
-    type: UpdateDto,
-    description: '강의 상태 변경을 위한 api 입니다.',
-  })
-  update(@Body() updateDto: UpdateDto) {
-    return this.lectureService.update(updateDto);
-  }
+  // @HttpCode(HttpStatus.OK)
+  // @Post('update')
+  // @ApiBody({
+  //   type: UpdateDto,
+  //   description: '강의 상태 변경을 위한 api',
+  // })
+  // update(@Body() updateDto: UpdateDto) {
+  //   return this.lectureService.update(updateDto);
+  // }
 }

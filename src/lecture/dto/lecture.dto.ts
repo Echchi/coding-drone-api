@@ -1,15 +1,23 @@
 import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CreateDto {
+export class LectureCreateDto {
   @ApiProperty({
     description: '강사 아이디',
     example: 'test',
   })
   @IsString()
   instructorId: string;
+
+  @ApiProperty({
+    description: '강의 코드',
+    example: '00000',
+  })
+  @IsString()
+  code: string;
 }
-export class UpdateDto {
+
+export class LectureUpdateDto {
   @ApiProperty({
     description: '강의 아이디',
     example: 1,

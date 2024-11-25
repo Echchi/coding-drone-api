@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { InstructorController } from './instructor.controller';
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { InstructorService } from './instructor.service';
 
 describe('InstructorController', () => {
@@ -39,7 +39,7 @@ describe('InstructorController', () => {
     });
 
     it('should throw an error if instructor is not found', async () => {
-      const userid = 'test';
+      const userid = 'tests';
       mockInstructorService.findOne.mockResolvedValue(null);
 
       await expect(controller.findOne(userid)).rejects.toThrow(

@@ -13,9 +13,7 @@ export class AuthService {
 
   async logIn(loginDto: LoginDto): Promise<{ access_token: string }> {
     const { userid, password } = loginDto;
-    console.log('Login DTO:', loginDto);
     const instructor = await this.instructorService.findOne(userid);
-    console.log('Instructor Found:', instructor);
     if (
       !instructor ||
       !(await this.validatePassword(password, instructor.password))
@@ -25,7 +23,6 @@ export class AuthService {
     const payload = { userid: instructor.userid, sub: instructor.id };
 
     const token = await this.generateToken(payload);
-    console.log('Generated Token:', token);
 
     return { access_token: token };
   }

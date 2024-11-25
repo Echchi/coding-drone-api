@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { Lecture } from './entities/lecture.entitiy';
 import { Instructor } from '../instructor/entities/instructor.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { CreateDto, UpdateDto } from './dto/lecture.dto';
+import { LectureCreateDto, LectureUpdateDto } from './dto/lecture.dto';
 
 describe('LectureService', () => {
   let service: LectureService;
@@ -41,11 +41,10 @@ describe('LectureService', () => {
   describe('create', () => {
     it('should generate a unique lecture code and create a lecture with active status', async () => {
       const instructor = new Instructor();
-      const createDto: CreateDto = {
+      const createDto: LectureCreateDto = {
         instructorId: 'test',
+        code: '00000',
       };
-
-      const code = 'mockedCode123';
 
       jest.spyOn(instructorRepository, 'findOne').mockResolvedValue(instructor);
 
@@ -57,16 +56,18 @@ describe('LectureService', () => {
           raw: [],
           affected: 1,
         }));
+      const result = await service.create(createDto);
 
       expect(mockInsert).toHaveBeenCalledWith({
-        code,
+        code: createDto.code,
         instructor,
         active: true,
       });
     });
     it('should throw an error if instructor is not found', async () => {
-      const createDto: CreateDto = {
+      const createDto: LectureCreateDto = {
         instructorId: 'tests',
+        code: '00000',
       };
       jest.spyOn(instructorRepository, 'findOne').mockResolvedValue(null);
 
@@ -77,7 +78,7 @@ describe('LectureService', () => {
   });
   describe('update', () => {
     it('should deactivate a lecture by setting active to false', async () => {
-      const updateDto: UpdateDto = {
+      const updateDto: LectureUpdateDto = {
         lectureId: 1,
       };
       const lecture = new Lecture();
@@ -97,7 +98,7 @@ describe('LectureService', () => {
     });
 
     it('should throw an error if lecture does not exist', async () => {
-      const updateDto: UpdateDto = {
+      const updateDto: LectureUpdateDto = {
         lectureId: 1,
       };
       jest.spyOn(lectureRepository, 'findOne').mockResolvedValue(null);
