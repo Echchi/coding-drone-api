@@ -32,5 +32,5 @@ export class LectureUpdateDto {
   })
   @IsOptional()
   @IsBoolean()
-  active?: true;
+  active?: boolean;
 }

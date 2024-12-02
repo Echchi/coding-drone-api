@@ -9,5 +9,6 @@ import { InstructorModule } from '../instructor/instructor.module';
   imports: [TypeOrmModule.forFeature([Lecture]), InstructorModule],
   providers: [LectureService],
   controllers: [LectureController],
+  exports: [LectureService],
 })
 export class LectureModule {}

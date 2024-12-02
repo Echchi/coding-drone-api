@@ -1,14 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
+
+import { LectureCreateDto, LectureUpdateDto } from './dto/lecture.dto';
+import { NotFoundException } from '@nestjs/common';
 import { LectureController } from './lecture.controller';
 import { LectureService } from './lecture.service';
-import { LectureCreateDto, LectureUpdateDto } from './dto/lecture.dto';
 
 describe('LectureController', () => {
   let controller: LectureController;
 
   const mockLectureService = {
-    createLecture: jest.fn().mockResolvedValue('code123'),
-    updateLecture: jest.fn(),
+    create: jest.fn().mockResolvedValue('00000'),
+    update: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -36,7 +38,7 @@ describe('LectureController', () => {
       };
       const result = await controller.create(createDto);
 
-      expect(mockLectureService.createLecture).toHaveBeenCalledWith(createDto);
+      expect(mockLectureService.create).toHaveBeenCalledWith(createDto);
       expect(result).toBe('00000');
     });
   });
@@ -44,25 +46,27 @@ describe('LectureController', () => {
     it('should deactivate a lecture by setting active to false', async () => {
       const updateDto: LectureUpdateDto = {
         lectureId: 1,
+        active: false,
       };
 
       await controller.update(updateDto);
-      expect(mockLectureService.updateLecture).toHaveBeenCalledWith(
-        updateDto.lectureId,
-        false,
+      const result = expect(mockLectureService.update).toHaveBeenCalledWith(
+        updateDto,
       );
+      expect(result).toBe({ id: updateDto.lectureId });
     });
     it('should throw an error if lecture does not exist', async () => {
       const updateDto: LectureUpdateDto = {
         lectureId: 9999,
+        active: false,
       };
 
-      mockLectureService.updateLecture.mockImplementation(() => {
-        throw new Error('Lecture not found');
+      mockLectureService.update.mockRejectedValue(() => {
+        throw new NotFoundException('Lecture not found');
       });
 
       await expect(controller.update(updateDto)).rejects.toThrow(
-        'Lecture not found',
+        NotFoundException,
       );
     });
   });

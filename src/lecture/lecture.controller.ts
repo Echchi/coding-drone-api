@@ -5,10 +5,11 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Put,
 } from '@nestjs/common';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { LectureService } from './lecture.service';
-import { LectureCreateDto } from './dto/lecture.dto';
+import { LectureCreateDto, LectureUpdateDto } from './dto/lecture.dto';
 
 @ApiTags('Lecture')
 @Controller('lecture')
@@ -33,13 +34,13 @@ export class LectureController {
   create(@Body() createDto: LectureCreateDto) {
     return this.lectureService.create(createDto);
   }
-  // @HttpCode(HttpStatus.OK)
-  // @Post('update')
-  // @ApiBody({
-  //   type: UpdateDto,
-  //   description: '강의 상태 변경을 위한 api',
-  // })
-  // update(@Body() updateDto: UpdateDto) {
-  //   return this.lectureService.update(updateDto);
-  // }
+  @HttpCode(HttpStatus.OK)
+  @Put()
+  @ApiBody({
+    type: LectureUpdateDto,
+    description: '강의 상태 변경을 위한 api',
+  })
+  update(@Body() updateDto: LectureUpdateDto) {
+    return this.lectureService.update(updateDto);
+  }
 }
