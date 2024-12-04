@@ -10,7 +10,7 @@ describe('LectureController', () => {
 
   const mockLectureService = {
     create: jest.fn().mockResolvedValue('00000'),
-    update: jest.fn(),
+    update: jest.fn().mockResolvedValue({ id: 1 }),
   };
 
   beforeEach(async () => {
@@ -49,11 +49,11 @@ describe('LectureController', () => {
         active: false,
       };
 
-      await controller.update(updateDto);
-      const result = expect(mockLectureService.update).toHaveBeenCalledWith(
-        updateDto,
-      );
-      expect(result).toBe({ id: updateDto.lectureId });
+      const result = await controller.update(updateDto);
+
+      expect(mockLectureService.update).toHaveBeenCalledWith(updateDto);
+
+      expect(result).toEqual({ id: 1 });
     });
     it('should throw an error if lecture does not exist', async () => {
       const updateDto: LectureUpdateDto = {
