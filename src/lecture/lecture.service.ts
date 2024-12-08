@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InstructorService } from '../instructor/instructor.service';
-import { LectureCreateDto } from './dto/lecture.dto';
+import { LectureCreateDto, LectureUpdateDto } from './dto/lecture.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Lecture } from './entities/lecture.entitiy';
 import { Repository } from 'typeorm';
@@ -33,5 +33,19 @@ export class LectureService {
       active: true,
     });
     return { code };
+  }
+
+  async update(updateDto: LectureUpdateDto): Promise<{ id: number }> {
+    const { lectureId, active } = updateDto;
+
+    const lecture = await this.lectureRepository.findOne({
+      where: { id: lectureId },
+    });
+    if (!lecture) {
+      throw new NotFoundException('Lecture not found');
+    }
+    await this.lectureRepository.update({ id: lecture.id }, { active });
+
+    return { id: lectureId };
   }
 }
