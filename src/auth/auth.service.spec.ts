@@ -8,7 +8,7 @@ describe('AuthService', () => {
   let service: AuthService;
 
   const mockInstructorService = {
-    findOne: jest.fn().mockImplementation((userid: string) => {
+    getOne: jest.fn().mockImplementation((userid: string) => {
       if (userid === 'tester') {
         return { id: 1, userid: 'tester', password: 'hashedPassword' };
       }
@@ -50,11 +50,11 @@ describe('AuthService', () => {
 
       const result = await service.logIn(loginDto);
 
-      expect(mockInstructorService.findOne).toHaveBeenCalledWith('tester');
+      expect(mockInstructorService.getOne).toHaveBeenCalledWith('tester');
     });
 
     it('should throw an error if instructor is not found', async () => {
-      mockInstructorService.findOne.mockResolvedValue(null);
+      mockInstructorService.getOne.mockResolvedValue(null);
       const loginDto = { userid: 'invalidUser', password: 'password' };
       await expect(service.logIn(loginDto)).rejects.toThrow(
         UnauthorizedException,
@@ -70,7 +70,7 @@ describe('AuthService', () => {
     });
 
     it('should return access_token if credentials are valid', async () => {
-      mockInstructorService.findOne.mockResolvedValue({
+      mockInstructorService.getOne.mockResolvedValue({
         id: 1,
         userid: 'tester',
         password: 'hashedPassword',
@@ -81,7 +81,7 @@ describe('AuthService', () => {
 
       const result = await service.logIn(loginDto);
 
-      expect(mockInstructorService.findOne).toHaveBeenCalledWith('tester');
+      expect(mockInstructorService.getOne).toHaveBeenCalledWith('tester');
       expect(result).toEqual({ access_token: 'mockAccessToken' });
     });
   });

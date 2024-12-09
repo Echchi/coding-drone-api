@@ -22,7 +22,7 @@ export class LectureService {
 
   async create(createDto: LectureCreateDto): Promise<{ code: string }> {
     const { instructorId, code } = createDto;
-    const instructor = await this.instructorService.findOne(instructorId);
+    const instructor = await this.instructorService.getOne(instructorId);
     if (!instructor) {
       throw new NotFoundException('Instructor not found');
     }

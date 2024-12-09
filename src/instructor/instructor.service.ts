@@ -9,7 +9,7 @@ export class InstructorService {
     @InjectRepository(Instructor)
     private instructorRepository: Repository<Instructor>,
   ) {}
-  async findOne(userid: string): Promise<Instructor | undefined> {
+  async getOne(userid: string): Promise<Instructor | undefined> {
     try {
       const instructor = await this.instructorRepository.findOne({
         where: { userid: userid },

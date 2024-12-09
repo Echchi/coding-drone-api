@@ -70,4 +70,9 @@ describe('LectureController', () => {
       );
     });
   });
+  describe('getOne',()=>{
+    it('should find a lecture',async ()=>{
+      const
+    })
+  })
 });

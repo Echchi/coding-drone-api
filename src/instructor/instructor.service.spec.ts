@@ -40,17 +40,17 @@ describe('InstructorService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('findOne', () => {
+  describe('getOne', () => {
     it('should return an Instructor when a valid userid is provided', async () => {
-      const user = await service.findOne('tester');
+      const user = await service.getOne('tester');
       expect(user).toBeDefined();
     });
 
     it('should return an error if the user does not exist', async () => {
-      await expect(service.findOne('testers')).rejects.toThrow(
+      await expect(service.getOne('testers')).rejects.toThrow(
         UnauthorizedException,
       );
-      await expect(service.findOne('testers')).rejects.toThrow(
+      await expect(service.getOne('testers')).rejects.toThrow(
         'Instructor not found',
       );
     });
