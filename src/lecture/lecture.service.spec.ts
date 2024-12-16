@@ -6,6 +6,7 @@ import { Instructor } from '../instructor/entities/instructor.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { LectureCreateDto, LectureUpdateDto } from './dto/lecture.dto';
 import { InstructorService } from '../instructor/instructor.service';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 
 describe('LectureService', () => {
   let service: LectureService;
@@ -124,6 +125,19 @@ describe('LectureService', () => {
       jest.spyOn(lectureRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.update(updateDto)).rejects.toThrowError(
+        'Lecture not found',
+      );
+    });
+  });
+  describe('getOne', () => {
+    it('should return an lecture when a valid code is provided', async () => {
+      const lecture = await service.getOne('00000');
+      expect(lecture).toBeDefined();
+    });
+
+    it('should return an error if the lecture does not exist', async () => {
+      await expect(service.getOne('12345')).rejects.toThrow(NotFoundException);
+      await expect(service.getOne('12345')).rejects.toThrow(
         'Lecture not found',
       );
     });

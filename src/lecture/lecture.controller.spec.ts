@@ -7,13 +7,19 @@ import { LectureService } from './lecture.service';
 
 describe('LectureController', () => {
   let controller: LectureController;
-
-  const mockLectureService = {
-    create: jest.fn().mockResolvedValue('00000'),
-    update: jest.fn().mockResolvedValue({ id: 1 }),
-  };
+  let mockLectureService;
 
   beforeEach(async () => {
+    mockLectureService = {
+      create: jest.fn().mockResolvedValue('00000'),
+      update: jest.fn().mockResolvedValue({ id: 1 }),
+      getOne: jest.fn().mockResolvedValue({
+        instructorId: 'test',
+        code: '00000',
+        lectureId: 1,
+        active: true,
+      }),
+    };
     const module: TestingModule = await Test.createTestingModule({
       controllers: [LectureController],
       providers: [
@@ -70,9 +76,31 @@ describe('LectureController', () => {
       );
     });
   });
-  describe('getOne',()=>{
-    it('should find a lecture',async ()=>{
-      const
-    })
-  })
+  describe('getOne', () => {
+    it('should find a lecture', async () => {
+      const code = '00000';
+      const result = {
+        instructorId: 'test',
+        code: '00000',
+        lectureId: 1,
+        active: true,
+      };
+      const response = await controller.getOne(code);
+
+      expect(mockLectureService.getOne).toHaveBeenCalledWith(code);
+      expect(response).toEqual(result);
+    });
+    it('should throw an error if lecture is not found', async () => {
+      const code = '00000';
+
+      mockLectureService.getOne.mockRejectedValue(() => {
+        throw new NotFoundException('Lecture not found');
+      });
+
+      await expect(controller.getOne(code)).rejects.toThrow(NotFoundException);
+      await expect(controller.getOne(code)).rejects.toThrow(
+        'Lecture not found',
+      );
+    });
+  });
 });
