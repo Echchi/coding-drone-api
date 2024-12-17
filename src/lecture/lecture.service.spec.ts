@@ -6,18 +6,18 @@ import { Instructor } from '../instructor/entities/instructor.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { LectureCreateDto, LectureUpdateDto } from './dto/lecture.dto';
 import { InstructorService } from '../instructor/instructor.service';
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 
 describe('LectureService', () => {
   let service: LectureService;
   let lectureRepository: Repository<Lecture>;
-  let instructorRepository: Repository<Instructor>;
-
-  const mockInstructorService = {
-    findOne: jest.fn(),
-  };
+  let mockInstructorService;
 
   beforeEach(async () => {
+    mockInstructorService = {
+      getOne: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LectureService,
@@ -27,6 +27,7 @@ describe('LectureService', () => {
             findOne: jest.fn(),
             insert: jest.fn(),
             update: jest.fn(),
+            getOne: jest.fn(),
           },
         },
         {
@@ -46,9 +47,6 @@ describe('LectureService', () => {
     lectureRepository = module.get<Repository<Lecture>>(
       getRepositoryToken(Lecture),
     );
-    instructorRepository = module.get<Repository<Instructor>>(
-      getRepositoryToken(Instructor),
-    );
   });
 
   it('should be defined', () => {
@@ -56,23 +54,18 @@ describe('LectureService', () => {
   });
   describe('create', () => {
     it('should generate a unique lecture code and create a lecture with active status', async () => {
-      const instructor = new Instructor();
-      instructor.id = 1;
+      const instructor = { id: 1 };
       const createDto: LectureCreateDto = {
         instructorId: 'test',
         code: '00000',
       };
 
-      jest.spyOn(instructorRepository, 'findOne').mockResolvedValue(instructor);
+      mockInstructorService.getOne.mockResolvedValue(instructor);
 
       const mockInsert = jest
         .spyOn(lectureRepository, 'insert')
-        .mockImplementation(async (lecture) => ({
-          identifiers: [{ id: 1 }],
-          generatedMaps: [],
-          raw: [],
-          affected: 1,
-        }));
+        .mockResolvedValue(undefined);
+
       const result = await service.create(createDto);
 
       expect(mockInsert).toHaveBeenCalledWith({
@@ -86,7 +79,7 @@ describe('LectureService', () => {
         instructorId: 'tests',
         code: '00000',
       };
-      jest.spyOn(instructorRepository, 'findOne').mockResolvedValue(null);
+      mockInstructorService.getOne.mockResolvedValue(null);
 
       await expect(service.create(createDto)).rejects.toThrowError(
         'Instructor not found',
@@ -131,8 +124,20 @@ describe('LectureService', () => {
   });
   describe('getOne', () => {
     it('should return an lecture when a valid code is provided', async () => {
-      const lecture = await service.getOne('00000');
-      expect(lecture).toBeDefined();
+      const lecture = {
+        id: 1,
+        code: '00000',
+        active: true,
+      };
+
+      jest.spyOn(lectureRepository, 'findOne').mockResolvedValue(lecture);
+
+      const result = await service.getOne('00000');
+
+      expect(lectureRepository.findOne).toHaveBeenCalledWith({
+        where: { code: '00000', active: true },
+      });
+      expect(result).toEqual(lecture);
     });
 
     it('should return an error if the lecture does not exist', async () => {

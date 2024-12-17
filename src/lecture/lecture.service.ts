@@ -48,4 +48,15 @@ export class LectureService {
 
     return { id: lectureId };
   }
+
+  async getOne(code: string): Promise<Lecture> {
+    const lecture = await this.lectureRepository.findOne({
+      where: { code, active: true },
+    });
+    if (!lecture) {
+      throw new NotFoundException('Lecture not found');
+    }
+
+    return lecture;
+  }
 }
