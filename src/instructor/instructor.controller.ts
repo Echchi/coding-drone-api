@@ -1,6 +1,8 @@
 import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
 import { InstructorService } from './instructor.service';
-
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+@ApiTags('Instructor')
+@ApiBearerAuth('access-token')
 @Controller('instructor')
 export class InstructorController {
   constructor(private readonly instructorService: InstructorService) {}

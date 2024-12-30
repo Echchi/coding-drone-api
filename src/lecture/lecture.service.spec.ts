@@ -128,7 +128,10 @@ describe('LectureService', () => {
         id: 1,
         code: '00000',
         active: true,
-      };
+        created_at: new Date(),
+        updated_at: new Date(),
+        instructor: { id: 1, userid: 'test' },
+      } as Lecture;
 
       jest.spyOn(lectureRepository, 'findOne').mockResolvedValue(lecture);
 
@@ -141,6 +144,12 @@ describe('LectureService', () => {
     });
 
     it('should return an error if the lecture does not exist', async () => {
+      await expect(service.getOne('12345')).rejects.toThrow(NotFoundException);
+      await expect(service.getOne('12345')).rejects.toThrow(
+        'Lecture not found',
+      );
+    });
+    it('should return an error if the lecture does not active', async () => {
       await expect(service.getOne('12345')).rejects.toThrow(NotFoundException);
       await expect(service.getOne('12345')).rejects.toThrow(
         'Lecture not found',
