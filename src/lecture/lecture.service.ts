@@ -22,7 +22,7 @@ export class LectureService {
 
   async create(createDto: LectureCreateDto): Promise<{ code: string }> {
     const { instructorId, code } = createDto;
-    const instructor = await this.instructorService.findOne(instructorId);
+    const instructor = await this.instructorService.getOne(instructorId);
     if (!instructor) {
       throw new NotFoundException('Instructor not found');
     }
@@ -47,5 +47,16 @@ export class LectureService {
     await this.lectureRepository.update({ id: lecture.id }, { active });
 
     return { id: lectureId };
+  }
+
+  async getOne(code: string): Promise<Lecture> {
+    const lecture = await this.lectureRepository.findOne({
+      where: { code, active: true },
+    });
+    if (!lecture) {
+      throw new NotFoundException('Lecture not found');
+    }
+
+    return lecture;
   }
 }

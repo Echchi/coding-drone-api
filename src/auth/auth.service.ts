@@ -13,7 +13,8 @@ export class AuthService {
 
   async logIn(loginDto: LoginDto): Promise<{ access_token: string }> {
     const { userid, password } = loginDto;
-    const instructor = await this.instructorService.findOne(userid);
+    const instructor = await this.instructorService.getOne(userid);
+
     if (
       !instructor ||
       !(await this.validatePassword(password, instructor.password))

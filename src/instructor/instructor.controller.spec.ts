@@ -9,7 +9,7 @@ describe('InstructorController', () => {
 
   beforeEach(async () => {
     mockInstructorService = {
-      findOne: jest.fn(),
+      getOne: jest.fn(),
     };
     const module: TestingModule = await Test.createTestingModule({
       controllers: [InstructorController],
@@ -27,22 +27,26 @@ describe('InstructorController', () => {
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
-  describe('findOne', () => {
+  describe('getOne', () => {
     it('should find an instructor', async () => {
       const userid = 'test';
-      mockInstructorService.findOne.mockResolvedValue(result);
+      const result = {
+        id: 1,
+        userid: 'tester',
+      };
+      mockInstructorService.getOne.mockResolvedValue(result);
 
-      const response = await controller.findOne(userid);
+      const response = await controller.getOne(userid);
 
-      expect(mockInstructorService.findOne).toHaveBeenCalledWith(userid);
+      expect(mockInstructorService.getOne).toHaveBeenCalledWith(userid);
       expect(response).toEqual(result);
     });
 
     it('should throw an error if instructor is not found', async () => {
       const userid = 'tests';
-      mockInstructorService.findOne.mockResolvedValue(null);
+      mockInstructorService.getOne.mockResolvedValue(null);
 
-      await expect(controller.findOne(userid)).rejects.toThrow(
+      await expect(controller.getOne(userid)).rejects.toThrow(
         NotFoundException,
       );
     });

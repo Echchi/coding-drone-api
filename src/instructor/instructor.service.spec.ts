@@ -3,7 +3,7 @@ import { InstructorService } from './instructor.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Instructor } from './entities/instructor.entity';
 import { Repository } from 'typeorm';
-import { UnauthorizedException } from '@nestjs/common';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 
 type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 describe('InstructorService', () => {
@@ -40,17 +40,17 @@ describe('InstructorService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('findOne', () => {
+  describe('getOne', () => {
     it('should return an Instructor when a valid userid is provided', async () => {
-      const user = await service.findOne('tester');
+      const user = await service.getOne('tester');
       expect(user).toBeDefined();
     });
 
     it('should return an error if the user does not exist', async () => {
-      await expect(service.findOne('testers')).rejects.toThrow(
-        UnauthorizedException,
+      await expect(service.getOne('testers')).rejects.toThrow(
+        NotFoundException,
       );
-      await expect(service.findOne('testers')).rejects.toThrow(
+      await expect(service.getOne('testers')).rejects.toThrow(
         'Instructor not found',
       );
     });
