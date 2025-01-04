@@ -5,6 +5,7 @@ import { Student } from './entities/student.entity';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Lecture } from '../lecture/entities/lecture.entitiy';
+import { StudentConnectDto } from './dto/studnet.dto';
 
 describe('StudentsService', () => {
   let studentService: StudentService;
@@ -42,13 +43,16 @@ describe('StudentsService', () => {
 
   describe('lecture-connect', () => {
     it('should connect a student to a lecture', async () => {
-      const body = { name: 'test', code: '00000' };
+      const connectDto: StudentConnectDto = { name: 'test', code: '00000' };
 
-      const lecture: DeepPartial<Lecture> = {
+      const lecture = {
         id: 1,
         code: '00000',
         active: true,
-      };
+        created_at: new Date(),
+        updated_at: new Date(),
+        instructor: { id: 1, userid: 'test' },
+      } as Lecture;
 
       jest.spyOn(lectureService, 'getOne').mockResolvedValue(lecture);
 
@@ -58,7 +62,7 @@ describe('StudentsService', () => {
         raw: [],
       } as InsertResult);
 
-      const result = await studentService.connect(body);
+      const result = await studentService.connect(connectDto);
 
       expect(lectureService.getOne).toHaveBeenCalledWith('00000');
       expect(studentRepository.insert).toHaveBeenCalledWith({
@@ -74,11 +78,14 @@ describe('StudentsService', () => {
     });
 
     it('should throw an error if lecture is not found', async () => {
-      const body = { name: 'test', code: 'invalid_code' };
+      const connectDto: StudentConnectDto = {
+        name: 'test',
+        code: 'invalid_code',
+      };
 
       jest.spyOn(lectureService, 'getOne').mockResolvedValue(null);
 
-      await expect(studentService.connect(body)).rejects.toThrow(
+      await expect(studentService.connect(connectDto)).rejects.toThrow(
         'Lecture not found',
       );
 
