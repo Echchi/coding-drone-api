@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LectureService } from './lecture.service';
-import { Repository } from 'typeorm';
+import { InsertResult, Repository } from 'typeorm';
 import { Lecture } from './entities/lecture.entitiy';
 import { Instructor } from '../instructor/entities/instructor.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -64,7 +64,11 @@ describe('LectureService', () => {
 
       const mockInsert = jest
         .spyOn(lectureRepository, 'insert')
-        .mockResolvedValue(undefined);
+        .mockResolvedValue({
+          identifiers: [{ id: 1 }],
+          generatedMaps: [],
+          raw: [],
+        } as InsertResult);
 
       const result = await service.create(createDto);
 
