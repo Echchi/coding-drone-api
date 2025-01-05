@@ -7,7 +7,7 @@ import { StudentModule } from './student/student.module';
 import { AuthModule } from './auth/auth.module';
 import { Instructor } from './instructor/entities/instructor.entity';
 import { Lecture } from './lecture/entities/lecture.entitiy';
-import { Students } from './student/entities/student.entity';
+import { Student } from './student/entities/student.entity';
 
 @Module({
   imports: [
@@ -21,7 +21,7 @@ import { Students } from './student/entities/student.entity';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
-        entities: [Instructor, Lecture, Students],
+        entities: [Instructor, Lecture, Student],
         synchronize: true,
       }),
       inject: [ConfigService],

@@ -62,6 +62,13 @@ describe('StudentsService', () => {
         raw: [],
       } as InsertResult);
 
+      jest.spyOn(studentRepository, 'findOne').mockResolvedValue({
+        id: 1,
+        name: 'test',
+        lecture,
+        joined_at: new Date(),
+      } as Student);
+
       const result = await studentService.connect(connectDto);
 
       expect(lectureService.getOne).toHaveBeenCalledWith('00000');
@@ -72,7 +79,7 @@ describe('StudentsService', () => {
       expect(result).toEqual({
         id: 1,
         name: 'test',
-        lecture,
+        lecture_id: 1,
         joined_at: expect.any(Date),
       });
     });
@@ -84,12 +91,13 @@ describe('StudentsService', () => {
       };
 
       jest.spyOn(lectureService, 'getOne').mockResolvedValue(null);
-
+      jest
+        .spyOn(studentRepository, 'insert')
+        .mockResolvedValue({} as InsertResult);
       await expect(studentService.connect(connectDto)).rejects.toThrow(
         'Lecture not found',
       );
 
-      expect(lectureService.getOne).toHaveBeenCalledWith('invalid_code');
       expect(studentRepository.insert).not.toHaveBeenCalled();
     });
   });

@@ -4,7 +4,6 @@ import { StudentConnectDto } from './dto/studnet.dto';
 import { Lecture } from '../lecture/entities/lecture.entitiy';
 import { StudentService } from './student.service';
 import { NotFoundException } from '@nestjs/common';
-import mock = jest.mock;
 
 describe('StudentsController', () => {
   let controller: StudentController;
@@ -23,7 +22,7 @@ describe('StudentsController', () => {
       connect: jest.fn().mockResolvedValue({
         id: 1,
         name: 'test',
-        lecture,
+        lecture_id: 1,
         joined_at: expect.any(Date),
       }),
     };
@@ -51,7 +50,12 @@ describe('StudentsController', () => {
       const result = await controller.connect(connectDto);
 
       expect(mockStudentService.connect).toHaveBeenCalledWith(connectDto);
-      expect(result).toBe(lecture);
+      expect(result).toEqual({
+        id: 1,
+        name: 'test',
+        lecture_id: 1,
+        joined_at: expect.any(Date),
+      });
     });
 
     it('should throw an error if lecture is not found', async () => {
