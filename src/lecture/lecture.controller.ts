@@ -8,11 +8,18 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { LectureService } from './lecture.service';
 import { LectureCreateDto, LectureUpdateDto } from './dto/lecture.dto';
 
 @ApiTags('Lecture')
+@ApiBearerAuth('access-token')
 @Controller('lecture')
 export class LectureController {
   constructor(private lectureService: LectureService) {}

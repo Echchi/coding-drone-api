@@ -26,7 +26,7 @@ describe('LectureService', () => {
           useValue: {
             findOne: jest.fn(),
             insert: jest.fn(),
-            update: jest.fn(),
+            save: jest.fn(),
             getOne: jest.fn(),
           },
         },
@@ -98,21 +98,29 @@ describe('LectureService', () => {
       };
       const lecture = new Lecture();
       lecture.id = 1;
+      lecture.active = true;
+
       jest.spyOn(lectureRepository, 'findOne').mockResolvedValue(lecture);
-      const mockUpdate = jest
-        .spyOn(lectureRepository, 'update')
-        .mockResolvedValue({
-          generatedMaps: [],
-          raw: [],
-          affected: 1,
-        });
 
-      await service.update(updateDto);
+      const mockSave = jest.spyOn(lectureRepository, 'save').mockResolvedValue({
+        ...lecture,
+        active: updateDto.active,
+      });
 
-      expect(mockUpdate).toHaveBeenCalledWith(
-        { id: updateDto.lectureId },
-        { active: updateDto.active },
-      );
+      const result = await service.update(updateDto);
+
+      expect(lectureRepository.findOne).toHaveBeenCalledWith({
+        where: { id: updateDto.lectureId },
+      });
+      expect(mockSave).toHaveBeenCalledWith({
+        ...lecture,
+        active: updateDto.active,
+      });
+
+      expect(result).toEqual({
+        id: lecture.id,
+        active: lecture.active,
+      });
     });
 
     it('should throw an error if lecture does not exist', async () => {

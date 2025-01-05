@@ -27,15 +27,24 @@ export class LectureService {
       throw new NotFoundException('Instructor not found');
     }
 
-    await this.lectureRepository.insert({
+    const insertResult = await this.lectureRepository.insert({
       code,
       instructor,
       active: true,
     });
-    return { code };
+
+    const lectureId = insertResult.identifiers[0]?.id;
+    const result = await this.lectureRepository.findOne({
+      where: { id: lectureId },
+    });
+    if (result) {
+      return { code: result.code };
+    }
   }
 
-  async update(updateDto: LectureUpdateDto): Promise<{ id: number }> {
+  async update(
+    updateDto: LectureUpdateDto,
+  ): Promise<{ id: number; active: boolean }> {
     const { lectureId, active } = updateDto;
 
     const lecture = await this.lectureRepository.findOne({
@@ -44,9 +53,12 @@ export class LectureService {
     if (!lecture) {
       throw new NotFoundException('Lecture not found');
     }
-    await this.lectureRepository.update({ id: lecture.id }, { active });
 
-    return { id: lectureId };
+    lecture.active = active;
+
+    const updatedLecture = await this.lectureRepository.save(lecture);
+
+    return { id: updatedLecture.id, active: updatedLecture.active };
   }
 
   async getOne(code: string): Promise<Lecture> {
