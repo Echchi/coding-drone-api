@@ -1,6 +1,6 @@
 import { StudentService } from './student.service';
 import { LectureService } from '../lecture/lecture.service';
-import { DeepPartial, InsertResult, Repository } from 'typeorm';
+import { InsertResult, Repository } from 'typeorm';
 import { Student } from './entities/student.entity';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -55,7 +55,7 @@ describe('StudentsService', () => {
       } as Lecture;
 
       jest.spyOn(lectureService, 'getOne').mockResolvedValue(lecture);
-
+      jest.spyOn(studentRepository, 'count').mockResolvedValue(0);
       jest.spyOn(studentRepository, 'insert').mockResolvedValue({
         identifiers: [{ id: 1 }],
         generatedMaps: [],
@@ -83,7 +83,26 @@ describe('StudentsService', () => {
         joined_at: expect.any(Date),
       });
     });
+    it('should throw an error if the name is duplicated in the lecture', async () => {
+      const connectDto: StudentConnectDto = { name: 'test', code: '00000' };
 
+      const lecture = {
+        id: 1,
+        code: '00000',
+        active: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+        instructor: { id: 1, userid: 'test' },
+      } as Lecture;
+
+      jest.spyOn(lectureService, 'getOne').mockResolvedValue(lecture);
+
+      jest.spyOn(studentRepository, 'count').mockResolvedValue(1); // 중복 있음
+
+      await expect(studentService.connect(connectDto)).rejects.toThrow(
+        'Name already exists in the lecture',
+      );
+    });
     it('should throw an error if lecture is not found', async () => {
       const connectDto: StudentConnectDto = {
         name: 'test',
