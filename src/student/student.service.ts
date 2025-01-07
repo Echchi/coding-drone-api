@@ -2,7 +2,11 @@ import { Student } from './entities/student.entity';
 import { Repository } from 'typeorm';
 import { LectureService } from '../lecture/lecture.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   StudentConnectDto,
   StudentConnectResponseDto,
@@ -24,11 +28,28 @@ export class StudentService {
     }
     return lecture;
   }
+
+  private async checkName(name: string, lectureId: number): Promise<boolean> {
+    const count = await this.studentRepository.count({
+      where: {
+        name,
+        lecture: { id: lectureId },
+      },
+    });
+
+    return count === 0;
+  }
   async connect(
     connectDto: StudentConnectDto,
   ): Promise<StudentConnectResponseDto> {
     const { name, code } = connectDto;
     const lecture = await this.validateLecture(code);
+
+    const isNameUnique = await this.checkName(name, lecture.id);
+    if (!isNameUnique) {
+      throw new BadRequestException('Name already exists in the lecture');
+    }
+
     const insertResult = await this.studentRepository.insert({
       name,
       lecture,
