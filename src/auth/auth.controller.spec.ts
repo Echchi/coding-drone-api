@@ -3,6 +3,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { UnauthorizedException } from '@nestjs/common';
+import { mockResponse } from '../test-utils/mockResponse';
+import { ConfigService } from '@nestjs/config';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -11,7 +13,15 @@ describe('AuthController', () => {
   const mockAuthService = {
     logIn: jest.fn(),
   };
-
+  const mockConfigService = {
+    get: jest.fn().mockImplementation((key: string) => {
+      const config = {
+        JWT_EXPIRATION: '4h',
+        JWT_REFRESH_EXPIRATION: '7d',
+      };
+      return config[key];
+    }),
+  };
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
@@ -19,6 +29,10 @@ describe('AuthController', () => {
         {
           provide: AuthService,
           useValue: mockAuthService,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
         },
       ],
     }).compile();
@@ -41,10 +55,11 @@ describe('AuthController', () => {
       mockAuthService.logIn.mockResolvedValueOnce({
         accessToken: 'mockAccessToken',
       });
+      const res = mockResponse();
 
-      const result = await controller.logIn(loginDto);
+      const result = await controller.logIn(loginDto, res);
 
-      expect(mockAuthService.logIn).toHaveBeenCalledWith(loginDto);
+      expect(mockAuthService.logIn).toHaveBeenCalledWith(loginDto, res);
       expect(result).toEqual({ accessToken: 'mockAccessToken' });
     });
 
@@ -58,7 +73,8 @@ describe('AuthController', () => {
         new UnauthorizedException('Invalid credentials'),
       );
 
-      await expect(controller.logIn(loginDto)).rejects.toThrow(
+      const res = mockResponse();
+      await expect(controller.logIn(loginDto, res)).rejects.toThrow(
         UnauthorizedException,
       );
     });

@@ -1,17 +1,23 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InstructorService } from '../instructor/instructor.service';
 import { JwtService } from '@nestjs/jwt';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
+import { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private instructorService: InstructorService,
     private jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
-  async logIn(loginDto: LoginDto): Promise<{ access_token: string }> {
+  async logIn(
+    loginDto: LoginDto,
+    res: Response, // Express Response 객체 추가
+  ): Promise<{ access_token: string }> {
     const { userid, password } = loginDto;
     const instructor = await this.instructorService.getOne(userid);
 
@@ -21,11 +27,32 @@ export class AuthService {
     ) {
       throw new UnauthorizedException('Invalid credentials');
     }
+
     const payload = { userid: instructor.userid, sub: instructor.id };
 
-    const token = await this.generateToken(payload);
+    const accessToken = this.generateAccessToken(payload);
+    const refreshToken = this.generateRefreshToken(payload);
 
-    return { access_token: token };
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return { access_token: accessToken };
+  }
+
+  async refreshAccessToken(refreshToken: string): Promise<string> {
+    try {
+      const payload = this.jwtService.verify(refreshToken);
+      return this.generateAccessToken({
+        userid: payload.userid,
+        sub: payload.sub,
+      });
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 
   private async validatePassword(
@@ -35,7 +62,19 @@ export class AuthService {
     return bcrypt.compare(inputPassword, savedPassword);
   }
 
-  private async generateToken(payload: { userid: string; sub: number }) {
-    return this.jwtService.sign(payload);
+  private generateAccessToken(payload: {
+    userid: string;
+    sub: number;
+  }): string {
+    const expiresIn = this.configService.get<string>('JWT_EXPIRATION');
+    return this.jwtService.sign(payload, { expiresIn });
+  }
+
+  private generateRefreshToken(payload: {
+    userid: string;
+    sub: number;
+  }): string {
+    const expiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRATION');
+    return this.jwtService.sign(payload, { expiresIn });
   }
 }
