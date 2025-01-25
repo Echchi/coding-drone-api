@@ -25,7 +25,7 @@ export class LectureController {
   constructor(private lectureService: LectureService) {}
 
   @HttpCode(HttpStatus.OK)
-  @Get('/generate-code')
+  @Get('/generate_code')
   @ApiOperation({
     summary: '강의 코드 생성',
     description: '랜덤한 강의 코드를 생성하여 반환합니다.',

@@ -33,7 +33,7 @@ export class AuthController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @Post('refresh-token')
+  @Post('refresh_token')
   @ApiBearerAuth('access-token')
   @ApiOperation({
     summary: '리프레시 토큰을 통한 액세스 토큰 갱신',
