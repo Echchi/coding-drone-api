@@ -10,7 +10,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { LoginDto } from './dto/login.dto';
 import { Request, Response } from 'express';
 @ApiTags('Auth')
@@ -26,12 +26,15 @@ export class AuthController {
     description: '강사 로그인을 위한 API',
   })
   @ApiBody({ type: LoginDto, description: '로그인 데이터 (ID와 비밀번호)' })
-  logIn(@Body() logInDto: LoginDto, @Res() res: Response) {
-    return this.authService.logIn(logInDto, res);
+  async logIn(@Body() logInDto: LoginDto, @Res() res: Response) {
+    const result = await this.authService.logIn(logInDto, res);
+
+    res.json(result);
   }
 
   @HttpCode(HttpStatus.OK)
   @Post('refresh-token')
+  @ApiBearerAuth('access-token')
   @ApiOperation({
     summary: '리프레시 토큰을 통한 액세스 토큰 갱신',
     description:

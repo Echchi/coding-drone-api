@@ -16,9 +16,10 @@ export class AuthService {
 
   async logIn(
     loginDto: LoginDto,
-    res: Response, // Express Response 객체 추가
+    res: Response,
   ): Promise<{ access_token: string }> {
     const { userid, password } = loginDto;
+
     const instructor = await this.instructorService.getOne(userid);
 
     if (
@@ -39,6 +40,7 @@ export class AuthService {
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+    console.log('accessToken', accessToken);
 
     return { access_token: accessToken };
   }
