@@ -10,7 +10,7 @@ export class StudentController {
   constructor(private studentService: StudentService) {}
 
   @HttpCode(HttpStatus.OK)
-  @Post('/lecture-connect')
+  @Post('/lecture_connect')
   @ApiOperation({
     summary: '강의 접속',
     description:

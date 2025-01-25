@@ -102,7 +102,10 @@ describe('AuthService', () => {
       const result = await service.logIn(loginDto, res);
 
       expect(mockInstructorService.getOne).toHaveBeenCalledWith('tester');
-      expect(result).toEqual({ access_token: 'mockAccessToken' });
+      expect(result).toEqual({
+        instructorId: 'tester',
+        access_token: 'mockAccessToken',
+      });
     });
   });
 

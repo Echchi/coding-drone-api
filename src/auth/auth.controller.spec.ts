@@ -53,6 +53,7 @@ describe('AuthController', () => {
       };
 
       mockAuthService.logIn.mockResolvedValueOnce({
+        instructorId: 'tester',
         accessToken: 'mockAccessToken',
       });
       const res = mockResponse();
@@ -60,7 +61,10 @@ describe('AuthController', () => {
       const result = await controller.logIn(loginDto, res);
 
       expect(mockAuthService.logIn).toHaveBeenCalledWith(loginDto, res);
-      expect(result).toEqual({ accessToken: 'mockAccessToken' });
+      expect(result).toEqual({
+        instructorId: 'tester',
+        accessToken: 'mockAccessToken',
+      });
     });
 
     it('should throw UnauthorizedException on invalid credentials\n', async () => {
