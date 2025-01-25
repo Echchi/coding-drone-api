@@ -17,7 +17,7 @@ export class AuthService {
   async logIn(
     loginDto: LoginDto,
     res: Response,
-  ): Promise<{ access_token: string }> {
+  ): Promise<{ instructorId: string; access_token: string }> {
     const { userid, password } = loginDto;
 
     const instructor = await this.instructorService.getOne(userid);
@@ -40,9 +40,8 @@ export class AuthService {
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    console.log('accessToken', accessToken);
 
-    return { access_token: accessToken };
+    return { instructorId: instructor.userid, access_token: accessToken };
   }
 
   async refreshAccessToken(refreshToken: string): Promise<string> {

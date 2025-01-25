@@ -30,6 +30,7 @@ export class AuthController {
     const result = await this.authService.logIn(logInDto, res);
 
     res.json(result);
+    return result;
   }
 
   @HttpCode(HttpStatus.OK)
