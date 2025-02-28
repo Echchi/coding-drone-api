@@ -4,19 +4,12 @@ import { StudentConnectDto } from './dto/studnet.dto';
 import { Lecture } from '../lecture/entities/lecture.entitiy';
 import { StudentService } from './student.service';
 import { NotFoundException } from '@nestjs/common';
+import { mockResponse } from '../test-utils/mockResponse';
 
 describe('StudentsController', () => {
   let controller: StudentController;
   let mockStudentService;
 
-  const lecture = {
-    id: 1,
-    code: '00000',
-    active: true,
-    created_at: new Date(),
-    updated_at: new Date(),
-    instructor: { id: 1, userid: 'test' },
-  } as Lecture;
   beforeEach(async () => {
     mockStudentService = {
       connect: jest.fn().mockResolvedValue({
@@ -24,6 +17,7 @@ describe('StudentsController', () => {
         name: 'test',
         lecture_id: 1,
         joined_at: expect.any(Date),
+        access_token: 'mockAccessToken',
       }),
     };
     const module: TestingModule = await Test.createTestingModule({
@@ -46,15 +40,17 @@ describe('StudentsController', () => {
   describe('lecture-connect', () => {
     it('should connect a student to a lecture', async () => {
       const connectDto: StudentConnectDto = { name: 'test', code: '00000' };
+      const res = mockResponse();
 
-      const result = await controller.connect(connectDto);
+      const result = await controller.connect(connectDto, res);
 
-      expect(mockStudentService.connect).toHaveBeenCalledWith(connectDto);
+      expect(mockStudentService.connect).toHaveBeenCalledWith(connectDto, res);
       expect(result).toEqual({
         id: 1,
         name: 'test',
         lecture_id: 1,
         joined_at: expect.any(Date),
+        access_token: 'mockAccessToken',
       });
     });
 
@@ -67,8 +63,9 @@ describe('StudentsController', () => {
       mockStudentService.connect.mockRejectedValue(() => {
         throw new NotFoundException('Lecture not found');
       });
+      const res = mockResponse();
 
-      await expect(controller.connect(connectDto)).rejects.toThrow(
+      await expect(controller.connect(connectDto, res)).rejects.toThrow(
         NotFoundException,
       );
     });
