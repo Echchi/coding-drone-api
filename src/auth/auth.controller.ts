@@ -28,7 +28,6 @@ export class AuthController {
   @ApiBody({ type: LoginDto, description: '로그인 데이터 (ID와 비밀번호)' })
   async logIn(@Body() logInDto: LoginDto, @Res() res: Response) {
     const result = await this.authService.logIn(logInDto, res);
-
     res.json(result);
     return result;
   }

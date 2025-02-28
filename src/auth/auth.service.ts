@@ -6,6 +6,8 @@ import { LoginDto } from './dto/login.dto';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 
+import { StudentConnectResponseDto } from '../student/dto/studnet.dto';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -47,10 +49,7 @@ export class AuthService {
   async refreshAccessToken(refreshToken: string): Promise<string> {
     try {
       const payload = this.jwtService.verify(refreshToken);
-      return this.generateAccessToken({
-        userid: payload.userid,
-        sub: payload.sub,
-      });
+      return this.generateAccessToken(payload);
     } catch (error) {
       throw new UnauthorizedException('Invalid refresh token');
     }
@@ -63,19 +62,34 @@ export class AuthService {
     return bcrypt.compare(inputPassword, savedPassword);
   }
 
-  private generateAccessToken(payload: {
-    userid: string;
-    sub: number;
-  }): string {
+  private generateAccessToken(payload: Record<string, any>): string {
     const expiresIn = this.configService.get<string>('JWT_EXPIRATION');
     return this.jwtService.sign(payload, { expiresIn });
   }
 
-  private generateRefreshToken(payload: {
-    userid: string;
-    sub: number;
-  }): string {
+  private generateRefreshToken(payload: Record<string, any>): string {
     const expiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRATION');
     return this.jwtService.sign(payload, { expiresIn });
+  }
+
+  async studentLogin(
+    studentConnectDto: Pick<StudentConnectResponseDto, 'id' | 'lecture_id'>,
+    res: Response,
+  ): Promise<{ access_token: string }> {
+    const { id, lecture_id } = studentConnectDto;
+
+    const payload = { studentId: id, lectureId: lecture_id };
+
+    const accessToken = this.generateAccessToken(payload);
+    const refreshToken = this.generateRefreshToken(payload);
+
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return { access_token: accessToken };
   }
 }

@@ -1,7 +1,16 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Res,
+  SetMetadata,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { StudentService } from './student.service';
 import { StudentConnectDto } from './dto/studnet.dto';
+import { Response } from 'express';
 
 @ApiTags('Student')
 @ApiBearerAuth('access-token')
@@ -11,6 +20,7 @@ export class StudentController {
 
   @HttpCode(HttpStatus.OK)
   @Post('/lecture_connect')
+  @SetMetadata('isPublic', true)
   @ApiOperation({
     summary: '강의 접속',
     description:
@@ -21,7 +31,9 @@ export class StudentController {
     type: StudentConnectDto,
     description: '강의 연결에 필요한 데이터를 입력합니다.',
   })
-  connect(@Body() connectDto: StudentConnectDto) {
-    return this.studentService.connect(connectDto);
+  async connect(@Body() connectDto: StudentConnectDto, @Res() res: Response) {
+    const result = await this.studentService.connect(connectDto, res);
+    res.json(result);
+    return result;
   }
 }

@@ -12,6 +12,8 @@ import {
   StudentConnectResponseDto,
 } from './dto/studnet.dto';
 import { Lecture } from '../lecture/entities/lecture.entitiy';
+import { AuthService } from '../auth/auth.service';
+import { Response } from 'express';
 
 @Injectable()
 export class StudentService {
@@ -19,6 +21,7 @@ export class StudentService {
     @InjectRepository(Student)
     private studentRepository: Repository<Student>,
     private lectureService: LectureService,
+    private authService: AuthService,
   ) {}
 
   private async validateLecture(code: string): Promise<Lecture> {
@@ -30,43 +33,46 @@ export class StudentService {
   }
 
   private async checkName(name: string, lectureId: number): Promise<boolean> {
-    const count = await this.studentRepository.count({
-      where: {
-        name,
-        lecture: { id: lectureId },
-      },
+    const existingStudent = await this.studentRepository.findOne({
+      where: { name, lecture: { id: lectureId } },
     });
 
-    return count === 0;
+    return !existingStudent;
   }
   async connect(
     connectDto: StudentConnectDto,
-  ): Promise<StudentConnectResponseDto> {
+    res: Response,
+  ): Promise<StudentConnectResponseDto & { access_token: string }> {
     const { name, code } = connectDto;
     const lecture = await this.validateLecture(code);
-
+    if (!lecture) {
+      throw new NotFoundException('Lecture not exists');
+    }
     const isNameUnique = await this.checkName(name, lecture.id);
     if (!isNameUnique) {
       throw new BadRequestException('Name already exists in the lecture');
     }
-
-    const insertResult = await this.studentRepository.insert({
+    const insertedStudent = await this.studentRepository.save({
       name,
       lecture,
     });
 
-    const studentId = insertResult.identifiers[0]?.id;
-    const insertedStudent = await this.studentRepository.findOne({
-      where: { id: studentId },
-      relations: ['lecture'],
-    });
+    if (!insertedStudent) {
+      throw new NotFoundException('Failed to create student');
+    }
+
+    const token = await this.authService.studentLogin(
+      { id: insertedStudent.id, lecture_id: lecture.id },
+      res,
+    );
 
     if (insertedStudent) {
       return {
-        id: studentId,
+        id: insertedStudent.id,
         name: insertedStudent.name,
         lecture_id: insertedStudent.lecture.id,
         joined_at: insertedStudent.joined_at,
+        access_token: token.access_token,
       };
     }
   }

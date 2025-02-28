@@ -20,7 +20,9 @@ export class LectureService {
     return { code };
   }
 
-  async create(createDto: LectureCreateDto): Promise<{ code: string }> {
+  async create(
+    createDto: LectureCreateDto,
+  ): Promise<{ lectureId: number; code: string }> {
     const { instructorId, code } = createDto;
     const instructor = await this.instructorService.getOne(instructorId);
     if (!instructor) {
@@ -38,7 +40,7 @@ export class LectureService {
       where: { id: lectureId },
     });
     if (result) {
-      return { code: result.code };
+      return { lectureId, code: result.code };
     }
   }
 

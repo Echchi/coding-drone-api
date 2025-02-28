@@ -11,7 +11,7 @@ describe('LectureController', () => {
 
   beforeEach(async () => {
     mockLectureService = {
-      create: jest.fn().mockResolvedValue('00000'),
+      create: jest.fn().mockResolvedValue({ lectureId: 1, code: '00000' }),
       update: jest.fn().mockResolvedValue({ id: 1 }),
       getOne: jest.fn().mockResolvedValue({
         instructorId: 'test',
@@ -45,7 +45,10 @@ describe('LectureController', () => {
       const result = await controller.create(createDto);
 
       expect(mockLectureService.create).toHaveBeenCalledWith(createDto);
-      expect(result).toBe('00000');
+      expect(result).toEqual({
+        lectureId: 1,
+        code: '00000',
+      });
     });
   });
   describe('update', () => {

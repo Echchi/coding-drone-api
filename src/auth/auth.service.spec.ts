@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import { mockResponse } from '../test-utils/mockResponse';
 import { ConfigService } from '@nestjs/config';
+import { mockJwtService } from '../test-utils/mockJwtService';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -16,11 +17,6 @@ describe('AuthService', () => {
       }
       return null;
     }),
-  };
-
-  const mockJwtService = {
-    sign: jest.fn().mockReturnValue('mockAccessToken'),
-    verify: jest.fn(),
   };
 
   const mockConfigService = {
