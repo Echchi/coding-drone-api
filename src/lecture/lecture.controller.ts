@@ -7,6 +7,7 @@ import {
   Post,
   Put,
   Query,
+  SetMetadata,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -66,6 +67,7 @@ export class LectureController {
 
   @HttpCode(HttpStatus.OK)
   @Get()
+  @SetMetadata('isPublic', true)
   @ApiOperation({
     summary: '강의 조회',
     description:

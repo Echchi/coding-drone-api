@@ -37,7 +37,7 @@ export class StudentService {
       where: { name, lecture: { id: lectureId } },
     });
 
-    return !existingStudent;
+    return !!existingStudent;
   }
   async connect(
     connectDto: StudentConnectDto,
@@ -49,7 +49,7 @@ export class StudentService {
       throw new NotFoundException('Lecture not exists');
     }
     const isNameUnique = await this.checkName(name, lecture.id);
-    if (!isNameUnique) {
+    if (isNameUnique) {
       throw new BadRequestException('Name already exists in the lecture');
     }
     const insertedStudent = await this.studentRepository.save({
