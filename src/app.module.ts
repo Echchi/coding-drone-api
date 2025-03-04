@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { Instructor } from './instructor/entities/instructor.entity';
 import { Lecture } from './lecture/entities/lecture.entitiy';
 import { Student } from './student/entities/student.entity';
+import { WebSocketModule } from './websocket/websocket.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { Student } from './student/entities/student.entity';
     LectureModule,
     StudentModule,
     AuthModule,
+    WebSocketModule,
   ],
 })
 export class AppModule {}
