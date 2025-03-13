@@ -49,6 +49,7 @@ export class LectureController {
   create(@Body() createDto: LectureCreateDto) {
     return this.lectureService.create(createDto);
   }
+
   @HttpCode(HttpStatus.OK)
   @Put()
   @ApiOperation({

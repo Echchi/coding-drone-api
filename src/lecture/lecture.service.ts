@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InstructorService } from '../instructor/instructor.service';
-import { LectureCreateDto, LectureUpdateDto } from './dto/lecture.dto';
+import { LectureUpdateDto } from './dto/lecture.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Lecture } from './entities/lecture.entitiy';
 import { Repository } from 'typeorm';
+import { LectureCreateDto } from './dto/lecture.dto';
+import { InstructorGateway } from 'src/websocket/instructor.gateway';
 
 @Injectable()
 export class LectureService {
@@ -11,6 +13,7 @@ export class LectureService {
     @InjectRepository(Lecture)
     private lectureRepository: Repository<Lecture>,
     private instructorService: InstructorService,
+    private instructorGateway: InstructorGateway,
   ) {}
 
   generateCode(): { code: string } {
@@ -20,28 +23,31 @@ export class LectureService {
     return { code };
   }
 
-  async create(
-    createDto: LectureCreateDto,
-  ): Promise<{ lectureId: number; code: string }> {
-    const { instructorId, code } = createDto;
+  async create(createLectureDto: LectureCreateDto) {
+    const { instructorId } = createLectureDto;
+
+    // 강사 존재 여부 확인
     const instructor = await this.instructorService.getOne(instructorId);
     if (!instructor) {
-      throw new NotFoundException('Instructor not found');
+      throw new Error('강사를 찾을 수 없습니다.');
     }
 
-    const insertResult = await this.lectureRepository.insert({
-      code,
-      instructor,
+    // 강의 생성
+    const lecture = await this.lectureRepository.save({
+      code: createLectureDto.code,
+      instructorId: instructor.id,
       active: true,
     });
 
-    const lectureId = insertResult.identifiers[0]?.id;
-    const result = await this.lectureRepository.findOne({
-      where: { id: lectureId },
-    });
-    if (result) {
-      return { lectureId, code: result.code };
-    }
+    // 소켓 room 준비
+    const instructorRoom = this.instructorGateway.getInstructorRoom(
+      lecture.code,
+    );
+
+    return {
+      ...lecture,
+      instructorRoom,
+    };
   }
 
   async update(
@@ -56,19 +62,28 @@ export class LectureService {
       throw new NotFoundException('Lecture not found');
     }
 
-    lecture.active = active;
+    // 강의가 비활성화되는 경우 (강의 종료)
+    if (lecture.active && !active) {
+      // 소켓 연결 정리
+      await this.instructorGateway.endLecture(lecture.code);
+    }
 
+    lecture.active = active;
     const updatedLecture = await this.lectureRepository.save(lecture);
 
-    return { id: updatedLecture.id, active: updatedLecture.active };
+    return {
+      id: updatedLecture.id,
+      active: updatedLecture.active,
+    };
   }
 
   async getOne(code: string): Promise<Lecture> {
     const lecture = await this.lectureRepository.findOne({
-      where: { code, active: true },
+      where: { code },
     });
+
     if (!lecture) {
-      throw new NotFoundException('Lecture not found');
+      throw new Error('강의를 찾을 수 없습니다.');
     }
 
     return lecture;
