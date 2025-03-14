@@ -265,9 +265,9 @@ export class InstructorGateway {
       const formattedStudents = Object.entries(data.students).map(
         ([studentId, details]) => ({
           studentId,
-          name: details.name,
-          code: details.code,
-          droneStatus: details.droneStatus,
+          name: (details as { name: string }).name,
+          code: (details as { code: string }).code,
+          droneStatus: (details as { droneStatus: string }).droneStatus,
           isConnected: true,
         }),
       );
@@ -308,9 +308,9 @@ export class InstructorGateway {
       const formattedStudents = Object.entries(data.students).map(
         ([studentId, details]) => ({
           studentId,
-          name: details.name,
-          code: details.code,
-          droneStatus: details.droneStatus,
+          name: (details as { name: string }).name,
+          code: (details as { code: string }).code,
+          droneStatus: (details as { droneStatus: string }).droneStatus,
           isConnected: true,
         }),
       );
