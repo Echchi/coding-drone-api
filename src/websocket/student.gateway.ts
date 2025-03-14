@@ -59,6 +59,15 @@ export class StudentGateway {
       // Redis에 학생 정보 저장
       await this.redisService.saveStudent(lectureCode, studentId, name);
 
+      // 기존 코드 확인
+      let code = await this.redisService.getStudentCode(lectureCode, studentId);
+
+      // 기존 코드가 없는 경우에만 기본 코드 저장
+      if (!code) {
+        code = "print('Hello, World!')";
+        await this.redisService.saveStudentCode(lectureCode, studentId, code);
+      }
+
       // 현재 접속중인 모든 학생 목록 조회
       const students = await this.redisService.getStudents(lectureCode);
 
@@ -85,10 +94,11 @@ export class StudentGateway {
         name,
       });
 
-      // 학생에게 입장 성공 알림
+      // 학생에게 입장 성공 알림 (코드 포함)
       client.emit('joinSuccess', {
         lectureCode,
         message: '강의실 참여에 성공했습니다.',
+        code: code, // 저장된 코드 전송
       });
 
       // 소켓에 학생 정보 저장
