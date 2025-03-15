@@ -64,7 +64,12 @@ export class StudentGateway {
 
       // 기존 코드가 없는 경우에만 기본 코드 저장
       if (!code) {
-        code = "print('Hello, World!')";
+        code = `# 여기에 드론을 제어하는 코드를 작성하세요
+# 예시:
+# drone.takeoff()
+# drone.move_forward(1)
+# drone.turn_right(90)
+# drone.land()`;
         await this.redisService.saveStudentCode(lectureCode, studentId, code);
       }
 
