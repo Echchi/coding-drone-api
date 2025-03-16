@@ -217,27 +217,17 @@ export class InstructorGateway implements OnModuleInit {
   // 내부 이벤트 핸들러: 코드 활성화 상태 변경
   private async handleCodeActiveChangedEvent(data: any) {
     try {
-      const instructorRoom = this.getInstructorRoom(data.lectureCode);
+      const { lectureCode, studentId, active } = data;
 
+      // 이미 instructor가 처리했으므로 여기서는 로깅만 하고 끝냅니다
       this.logger.log({
-        message: '이벤트 수신: code.active.changed',
-        lectureCode: data.lectureCode,
-        studentId: data.studentId,
-        active: data.active,
+        message: '이벤트 수신: code.active.changed (이미 처리됨)',
+        lectureCode,
+        studentId,
+        active,
       });
 
-      this.server.to(instructorRoom).emit('code:activeChanged', {
-        lectureCode: data.lectureCode,
-        studentId: data.studentId,
-        active: data.active,
-        students: data.students,
-      });
-
-      this.logger.log({
-        message: '강사에게 코드 활성화 상태 변경 알림 전송 완료 (이벤트 경유)',
-        lectureCode: data.lectureCode,
-        studentId: data.studentId,
-      });
+      // 메시지 전송 코드 삭제
     } catch (error) {
       this.logger.error({
         message: '코드 활성화 상태 변경 이벤트 처리 중 오류 발생',
@@ -250,27 +240,17 @@ export class InstructorGateway implements OnModuleInit {
   // 내부 이벤트 핸들러: 드론 활성화 상태 변경
   private async handleDroneActiveChangedEvent(data: any) {
     try {
-      const instructorRoom = this.getInstructorRoom(data.lectureCode);
+      const { lectureCode, studentId, active } = data;
 
+      // 이미 instructor가 처리했으므로 여기서는 로깅만 하고 끝냅니다
       this.logger.log({
-        message: '이벤트 수신: drone.active.changed',
-        lectureCode: data.lectureCode,
-        studentId: data.studentId,
-        active: data.active,
+        message: '이벤트 수신: drone.active.changed (이미 처리됨)',
+        lectureCode,
+        studentId,
+        active,
       });
 
-      this.server.to(instructorRoom).emit('drone:activeChanged', {
-        lectureCode: data.lectureCode,
-        studentId: data.studentId,
-        active: data.active,
-        students: data.students,
-      });
-
-      this.logger.log({
-        message: '강사에게 드론 활성화 상태 변경 알림 전송 완료 (이벤트 경유)',
-        lectureCode: data.lectureCode,
-        studentId: data.studentId,
-      });
+      // 메시지 전송 코드 삭제
     } catch (error) {
       this.logger.error({
         message: '드론 활성화 상태 변경 이벤트 처리 중 오류 발생',
@@ -303,6 +283,10 @@ export class InstructorGateway implements OnModuleInit {
 
   getInstructorRoom(lectureCode: string): string {
     return `lecture:${lectureCode}:instructor`;
+  }
+
+  private getStudentsRoom(lectureCode: string): string {
+    return `lecture:${lectureCode}:students`;
   }
 
   // 강의실 종료 처리
@@ -355,11 +339,18 @@ export class InstructorGateway implements OnModuleInit {
   }
 
   @SubscribeMessage('joinLecture')
-  async handleJoin(
-    @MessageBody() data: { lectureCode: string },
+  async handleJoinLecture(
+    @MessageBody()
+    data: { lectureCode: string; studentId: string; name: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const { lectureCode } = data;
+    const { lectureCode, studentId } = data;
+    const studentsRoom = this.getStudentsRoom(lectureCode);
+    const lectureRoom = this.getLectureRoom(lectureCode);
+    const studentPersonalRoom = this.getStudentPersonalRoom(
+      lectureCode,
+      studentId,
+    );
     const instructorRoom = this.getInstructorRoom(lectureCode);
 
     try {
@@ -369,6 +360,9 @@ export class InstructorGateway implements OnModuleInit {
         socketId: client.id,
       });
 
+      client.join(studentsRoom);
+      client.join(lectureRoom);
+      client.join(studentPersonalRoom);
       client.join(instructorRoom);
 
       // Redis에서 현재 접속중인 학생 목록 조회
@@ -419,6 +413,13 @@ export class InstructorGateway implements OnModuleInit {
         message: '강사 강의실 입장 완료',
         lectureCode,
         socketId: client.id,
+      });
+
+      // 입장 후 현재 가입된 모든 방 정보 로깅
+      this.logger.debug({
+        message: '학생 소켓 방 가입 상태',
+        studentId,
+        rooms: Array.from(client.rooms), // 모든 방 목록 확인
       });
     } catch (error) {
       this.logger.error({
@@ -664,19 +665,28 @@ export class InstructorGateway implements OnModuleInit {
           students: formattedStudents,
         });
 
-      // 학생에게 알림 (Socket.IO 직접 통신)
-      this.server
-        .to(`lecture:${lectureCode}:students`)
-        .emit('code:activeChanged', {
-          active,
-          studentId,
-          lectureCode,
-          message: `코드 편집이 ${active ? '활성화' : '비활성화'}되었습니다.`,
-        });
+      const studentPersonalRoom = this.getStudentPersonalRoom(
+        lectureCode,
+        studentId,
+      );
+
+      this.server.to(studentPersonalRoom).emit('code:activeChanged', {
+        active,
+        studentId,
+        lectureCode,
+        message: `코드 편집이 ${active ? '활성화' : '비활성화'}되었습니다.`,
+      });
 
       client.emit('code:activeChangedSuccess', {
         success: true,
         message: `학생 코드 ${active ? '활성화' : '비활성화'} 성공`,
+      });
+
+      this.logger.log({
+        message: '특정 학생에게 코드 활성화 상태 변경 알림 전송 완료',
+        lectureCode,
+        studentId,
+        active,
       });
     } catch (error) {
       this.logger.error({
@@ -840,7 +850,7 @@ export class InstructorGateway implements OnModuleInit {
 
       // 학생에게 알림 (Socket.IO 직접 통신)
       this.server
-        .to(`lecture:${lectureCode}:students`)
+        .to(`lecture:${lectureCode}:student:${studentId}`)
         .emit('drone:activeChanged', {
           active,
           studentId,
@@ -949,5 +959,107 @@ export class InstructorGateway implements OnModuleInit {
         message: '모든 학생 드론 활성화 상태 설정 중 오류가 발생했습니다.',
       });
     }
+  }
+
+  // 강사가 학생 코드를 직접 수정
+  @SubscribeMessage('code:instructorEdit')
+  async handleInstructorCodeEdit(
+    @MessageBody()
+    data: { lectureCode: string; studentId: string; code: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const { lectureCode, studentId, code } = data;
+    const studentPersonalRoom = `lecture:${lectureCode}:student:${studentId}`;
+
+    try {
+      this.logger.log({
+        message: '강사가 학생 코드 직접 수정',
+        lectureCode,
+        studentId,
+        codeLength: code.length,
+        instructorId: client.id,
+      });
+
+      // Redis에 코드 저장
+      await this.redisService.saveStudentCode(lectureCode, studentId, code);
+
+      // 현재 학생의 모든 정보 가져오기
+      const studentsWithDetails =
+        await this.redisService.getStudentsWithDetails(lectureCode);
+
+      // IStudent 형태로 변환
+      const formattedStudents = Object.entries(studentsWithDetails).map(
+        ([sid, details]) => ({
+          studentId: sid,
+          name: (details as any).name,
+          code: (details as any).code,
+          droneStatus: (details as any).droneStatus,
+          codeActive: (details as any).codeActive,
+          droneActive: (details as any).droneActive,
+          isConnected: true,
+        }),
+      );
+
+      // 내부 이벤트 발생 - 코드가 강사에 의해 수정됨
+      this.logger.log({
+        message: '내부 이벤트 발생: code.updated.by.instructor',
+        lectureCode,
+        studentId,
+      });
+
+      // 내부 이벤트 발생 (기존 이벤트 재사용)
+      this.eventsService.emitCodeUpdated({
+        lectureCode,
+        studentId,
+        code,
+        students: formattedStudents,
+      });
+
+      // 강사에게 알림
+      this.server
+        .to(this.getInstructorRoom(lectureCode))
+        .emit('code:instructorEditSuccess', {
+          lectureCode,
+          studentId,
+          code,
+          students: formattedStudents,
+          message: '학생 코드가 성공적으로 수정되었습니다.',
+        });
+
+      // 해당 학생에게 알림 (Socket.IO 직접 통신)
+      this.server.to(studentPersonalRoom).emit('code:updatedByInstructor', {
+        code,
+        lectureCode,
+        message: '강사가 코드를 수정했습니다.',
+      });
+
+      // 성공 응답
+      client.emit('code:instructorEditSuccess', {
+        success: true,
+        message: '학생 코드 수정 성공',
+        studentId,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: '강사의 학생 코드 수정 중 오류 발생',
+        lectureCode,
+        studentId,
+        error: error.message,
+        stack: error.stack,
+      });
+
+      client.emit('code:instructorEditSuccess', {
+        success: false,
+        message: '학생 코드 수정 중 오류가 발생했습니다.',
+      });
+    }
+  }
+
+  // 개인 룸 헬퍼 메서드 추가
+  private getStudentPersonalRoom(
+    lectureCode: string,
+    studentId: string,
+  ): string {
+    return `lecture:${lectureCode}:student:${studentId}`;
   }
 }
