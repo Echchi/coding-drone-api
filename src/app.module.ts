@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { Instructor } from './instructor/entities/instructor.entity';
 import { Lecture } from './lecture/entities/lecture.entitiy';
 import { Student } from './student/entities/student.entity';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { Student } from './student/entities/student.entity';
       }),
       inject: [ConfigService],
     }),
+    EventsModule,
     InstructorModule,
     LectureModule,
     StudentModule,

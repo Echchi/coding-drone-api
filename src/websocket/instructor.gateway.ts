@@ -6,24 +6,289 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { RedisService } from '../redis/redis.service';
+import { EventsService } from '../events/events.service';
 
 @Injectable()
 @WebSocketGateway({
   namespace: 'instructor',
   cors: { origin: '*' },
 })
-export class InstructorGateway {
+export class InstructorGateway implements OnModuleInit {
   private readonly logger = new Logger(InstructorGateway.name);
 
-  constructor(private readonly redisService: RedisService) {}
+  constructor(
+    private readonly redisService: RedisService,
+    private readonly eventsService: EventsService,
+  ) {}
 
   @WebSocketServer()
   server: Server;
 
+  // 모듈 초기화 시 이벤트 리스너 등록
+  onModuleInit() {
+    this.logger.log('InstructorGateway 모듈 초기화 및 이벤트 리스너 등록 시작');
+
+    // 학생 입장 이벤트 리스닝
+    this.eventsService.eventEmitter.on('student.joined', (data) => {
+      this.handleStudentJoinedEvent(data);
+    });
+
+    // 학생 퇴장 이벤트 리스닝
+    this.eventsService.eventEmitter.on('student.left', (data) => {
+      this.handleStudentLeftEvent(data);
+    });
+
+    // 코드 업데이트 이벤트 리스닝
+    this.eventsService.eventEmitter.on('code.updated', (data) => {
+      this.handleCodeUpdatedEvent(data);
+    });
+
+    // 드론 상태 업데이트 이벤트 리스닝
+    this.eventsService.eventEmitter.on('drone.updated', (data) => {
+      this.handleDroneUpdatedEvent(data);
+    });
+
+    // 코드 활성화 상태 변경 이벤트 리스닝
+    this.eventsService.eventEmitter.on('code.active.changed', (data) => {
+      this.handleCodeActiveChangedEvent(data);
+    });
+
+    // 드론 활성화 상태 변경 이벤트 리스닝
+    this.eventsService.eventEmitter.on('drone.active.changed', (data) => {
+      this.handleDroneActiveChangedEvent(data);
+    });
+
+    this.logger.log('InstructorGateway 모듈 이벤트 리스너 등록 완료');
+  }
+
+  // 내부 이벤트 핸들러: 학생 입장
+  private async handleStudentJoinedEvent(data: any) {
+    try {
+      const instructorRoom = this.getInstructorRoom(data.lectureCode);
+
+      this.logger.log({
+        message: '이벤트 수신: student.joined',
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+        name: data.name,
+      });
+
+      // students 배열에 codeActive와 droneActive 정보가 있는지 확인
+      const studentsWithActivation = data.students.map((student) => {
+        // 각 학생 객체에 codeActive와 droneActive가 없는 경우 기본값 추가
+        if (student.codeActive === undefined) {
+          this.logger.debug({
+            message: '학생 객체에 codeActive 필드가 없어 기본값 true 설정',
+            studentId: student.studentId,
+          });
+          student.codeActive = true;
+        }
+
+        if (student.droneActive === undefined) {
+          this.logger.debug({
+            message: '학생 객체에 droneActive 필드가 없어 기본값 true 설정',
+            studentId: student.studentId,
+          });
+          student.droneActive = true;
+        }
+
+        return student;
+      });
+
+      this.server.to(instructorRoom).emit('studentJoined', {
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+        name: data.name,
+        students: studentsWithActivation,
+      });
+
+      this.logger.log({
+        message: '강사에게 학생 입장 알림 전송 완료 (이벤트 경유)',
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: '학생 입장 이벤트 처리 중 오류 발생',
+        error: error.message,
+        stack: error.stack,
+      });
+    }
+  }
+
+  // 내부 이벤트 핸들러: 학생 퇴장
+  private async handleStudentLeftEvent(data: any) {
+    try {
+      const instructorRoom = this.getInstructorRoom(data.lectureCode);
+
+      this.logger.log({
+        message: '이벤트 수신: student.left',
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+      });
+
+      this.server.to(instructorRoom).emit('studentLeft', {
+        studentId: data.studentId,
+        students: data.students,
+      });
+
+      this.logger.log({
+        message: '강사에게 학생 퇴장 알림 전송 완료 (이벤트 경유)',
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: '학생 퇴장 이벤트 처리 중 오류 발생',
+        error: error.message,
+        stack: error.stack,
+      });
+    }
+  }
+
+  // 내부 이벤트 핸들러: 코드 업데이트
+  private async handleCodeUpdatedEvent(data: any) {
+    try {
+      const instructorRoom = this.getInstructorRoom(data.lectureCode);
+
+      this.logger.log({
+        message: '이벤트 수신: code.updated',
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+        codeLength: data.code?.length || 0,
+      });
+
+      this.server.to(instructorRoom).emit('code:updated', {
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+        code: data.code,
+        students: data.students,
+      });
+
+      this.logger.log({
+        message: '강사에게 코드 업데이트 알림 전송 완료 (이벤트 경유)',
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: '코드 업데이트 이벤트 처리 중 오류 발생',
+        error: error.message,
+        stack: error.stack,
+      });
+    }
+  }
+
+  // 내부 이벤트 핸들러: 드론 상태 업데이트
+  private async handleDroneUpdatedEvent(data: any) {
+    try {
+      const instructorRoom = this.getInstructorRoom(data.lectureCode);
+
+      this.logger.log({
+        message: '이벤트 수신: drone.updated',
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+        status: data.status,
+      });
+
+      this.server.to(instructorRoom).emit('drone:updated', {
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+        status: data.status,
+        students: data.students,
+      });
+
+      this.logger.log({
+        message: '강사에게 드론 상태 업데이트 알림 전송 완료 (이벤트 경유)',
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: '드론 상태 업데이트 이벤트 처리 중 오류 발생',
+        error: error.message,
+        stack: error.stack,
+      });
+    }
+  }
+
+  // 내부 이벤트 핸들러: 코드 활성화 상태 변경
+  private async handleCodeActiveChangedEvent(data: any) {
+    try {
+      const instructorRoom = this.getInstructorRoom(data.lectureCode);
+
+      this.logger.log({
+        message: '이벤트 수신: code.active.changed',
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+        active: data.active,
+      });
+
+      this.server.to(instructorRoom).emit('code:activeChanged', {
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+        active: data.active,
+        students: data.students,
+      });
+
+      this.logger.log({
+        message: '강사에게 코드 활성화 상태 변경 알림 전송 완료 (이벤트 경유)',
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: '코드 활성화 상태 변경 이벤트 처리 중 오류 발생',
+        error: error.message,
+        stack: error.stack,
+      });
+    }
+  }
+
+  // 내부 이벤트 핸들러: 드론 활성화 상태 변경
+  private async handleDroneActiveChangedEvent(data: any) {
+    try {
+      const instructorRoom = this.getInstructorRoom(data.lectureCode);
+
+      this.logger.log({
+        message: '이벤트 수신: drone.active.changed',
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+        active: data.active,
+      });
+
+      this.server.to(instructorRoom).emit('drone:activeChanged', {
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+        active: data.active,
+        students: data.students,
+      });
+
+      this.logger.log({
+        message: '강사에게 드론 활성화 상태 변경 알림 전송 완료 (이벤트 경유)',
+        lectureCode: data.lectureCode,
+        studentId: data.studentId,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: '드론 활성화 상태 변경 이벤트 처리 중 오류 발생',
+        error: error.message,
+        stack: error.stack,
+      });
+    }
+  }
+
   // 소켓 연결 시
   handleConnection(client: Socket) {
+    console.log(`📡 InstructorGateway - 소켓 연결 됨: ${client.id}`);
+    console.log('네임스페이스:', client.nsp.name);
+    console.log('연결 정보:', {
+      handshake: client.handshake.query,
+      rooms: Array.from(client.rooms),
+    });
+
     this.logger.log(`소켓 연결됨 - socket id: ${client.id}`);
   }
 
@@ -124,13 +389,15 @@ export class InstructorGateway {
         rooms,
       });
 
-      // IStudent 형태로 변환
+      // IStudent 형태로 변환 (코드 활성화, 드론 활성화 상태 포함)
       const formattedStudents = Object.entries(studentsWithDetails).map(
         ([studentId, details]) => ({
           studentId,
-          name: details.name,
-          code: details.code,
-          droneStatus: details.droneStatus,
+          name: (details as any).name,
+          code: (details as any).code,
+          droneStatus: (details as any).droneStatus,
+          codeActive: (details as any).codeActive,
+          droneActive: (details as any).droneActive,
           isConnected: true, // 연결 상태는 현재는 모두 true로 설정
         }),
       );
@@ -140,7 +407,7 @@ export class InstructorGateway {
         success: true,
         message: '강의실 입장 완료',
         rooms: rooms,
-        students: formattedStudents, // 상세 정보를 포함한 학생 목록 전달
+        students: formattedStudents, // 코드/드론 활성화 상태를 포함한 학생 목록 전달
       });
 
       client.data = {
@@ -218,13 +485,15 @@ export class InstructorGateway {
         studentsWithDetails,
       });
 
-      // IStudent 형태로 변환
+      // IStudent 형태로 변환 (코드 활성화, 드론 활성화 상태 포함)
       const formattedStudents = Object.entries(studentsWithDetails).map(
         ([studentId, details]) => ({
           studentId,
           name: details.name,
           code: details.code,
           droneStatus: details.droneStatus,
+          codeActive: details.codeActive,
+          droneActive: details.droneActive,
           isConnected: true, // 연결 상태는 현재는 모두 true로 설정
         }),
       );
@@ -265,9 +534,11 @@ export class InstructorGateway {
       const formattedStudents = Object.entries(data.students).map(
         ([studentId, details]) => ({
           studentId,
-          name: (details as { name: string }).name,
-          code: (details as { code: string }).code,
-          droneStatus: (details as { droneStatus: string }).droneStatus,
+          name: (details as any).name,
+          code: (details as any).code,
+          droneStatus: (details as any).droneStatus,
+          codeActive: (details as any).codeActive,
+          droneActive: (details as any).droneActive,
           isConnected: true,
         }),
       );
@@ -308,9 +579,11 @@ export class InstructorGateway {
       const formattedStudents = Object.entries(data.students).map(
         ([studentId, details]) => ({
           studentId,
-          name: (details as { name: string }).name,
-          code: (details as { code: string }).code,
-          droneStatus: (details as { droneStatus: string }).droneStatus,
+          name: (details as any).name,
+          code: (details as any).code,
+          droneStatus: (details as any).droneStatus,
+          codeActive: (details as any).codeActive,
+          droneActive: (details as any).droneActive,
           isConnected: true,
         }),
       );
@@ -326,6 +599,354 @@ export class InstructorGateway {
         message: '학생 드론 상태 업데이트 알림 전송 중 오류 발생',
         error: error.message,
         stack: error.stack,
+      });
+    }
+  }
+
+  // 학생 코드 활성화 상태 설정
+  @SubscribeMessage('code:setActive')
+  async handleSetCodeActive(
+    @MessageBody()
+    data: { lectureCode: string; studentId: string; active: boolean },
+    @ConnectedSocket() client: Socket,
+  ) {
+    console.log('📥 code:setActive 이벤트 수신:', data);
+    const { lectureCode, studentId, active } = data;
+
+    try {
+      this.logger.log({
+        message: '학생 코드 활성화 상태 설정',
+        lectureCode,
+        studentId,
+        active,
+        clientId: client.id,
+      });
+
+      // Redis에 코드 활성화 상태 저장
+      await this.redisService.saveStudentCodeActive(
+        lectureCode,
+        studentId,
+        active,
+      );
+
+      // 현재 학생의 모든 정보 가져오기
+      const studentsWithDetails =
+        await this.redisService.getStudentsWithDetails(lectureCode);
+
+      // IStudent 형태로 변환
+      const formattedStudents = Object.entries(studentsWithDetails).map(
+        ([studentId, details]) => ({
+          studentId,
+          name: (details as any).name,
+          code: (details as any).code,
+          droneStatus: (details as any).droneStatus,
+          codeActive: (details as any).codeActive,
+          droneActive: (details as any).droneActive,
+          isConnected: true,
+        }),
+      );
+
+      // 내부 이벤트 발생
+      this.eventsService.emitCodeActiveChanged({
+        lectureCode,
+        studentId,
+        active,
+        students: formattedStudents,
+      });
+
+      // 강사에게 알림
+      this.server
+        .to(this.getInstructorRoom(lectureCode))
+        .emit('code:activeChanged', {
+          lectureCode,
+          studentId,
+          active,
+          students: formattedStudents,
+        });
+
+      // 학생에게 알림 (Socket.IO 직접 통신)
+      this.server
+        .to(`lecture:${lectureCode}:students`)
+        .emit('code:activeChanged', {
+          active,
+          studentId,
+          lectureCode,
+          message: `코드 편집이 ${active ? '활성화' : '비활성화'}되었습니다.`,
+        });
+
+      client.emit('code:activeChangedSuccess', {
+        success: true,
+        message: `학생 코드 ${active ? '활성화' : '비활성화'} 성공`,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: '학생 코드 활성화 상태 설정 중 오류 발생',
+        lectureCode,
+        studentId,
+        error: error.message,
+      });
+
+      client.emit('code:activeChangedSuccess', {
+        success: false,
+        message: '학생 코드 활성화 상태 설정 중 오류가 발생했습니다.',
+      });
+    }
+  }
+
+  // 모든 학생 코드 활성화 상태 설정
+  @SubscribeMessage('code:setAllActive')
+  async handleSetAllCodeActive(
+    @MessageBody()
+    data: { lectureCode: string; active: boolean },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const { lectureCode, active } = data;
+
+    try {
+      this.logger.log({
+        message: '모든 학생 코드 활성화 상태 설정',
+        lectureCode,
+        active,
+      });
+
+      // Redis에 모든 학생 코드 활성화 상태 저장
+      await this.redisService.setAllCodeActive(lectureCode, active);
+
+      // 현재 학생의 모든 정보 가져오기
+      const studentsWithDetails =
+        await this.redisService.getStudentsWithDetails(lectureCode);
+
+      // IStudent 형태로 변환
+      const formattedStudents = Object.entries(studentsWithDetails).map(
+        ([studentId, details]) => ({
+          studentId,
+          name: (details as any).name,
+          code: (details as any).code,
+          droneStatus: (details as any).droneStatus,
+          codeActive: (details as any).codeActive,
+          droneActive: (details as any).droneActive,
+          isConnected: true,
+        }),
+      );
+
+      // 내부 이벤트 발생 - 모든 학생 코드 활성화 상태 변경
+      this.logger.log({
+        message: '내부 이벤트 발생: code.all.active.changed',
+        lectureCode,
+        active: active,
+      });
+      this.eventsService.emitAllCodeActiveChanged({
+        lectureCode,
+        active: active,
+        students: formattedStudents,
+      });
+
+      // 강사에게 알림
+      this.server
+        .to(this.getInstructorRoom(lectureCode))
+        .emit('code:allActiveChanged', {
+          lectureCode,
+          active,
+          students: formattedStudents,
+        });
+
+      // 학생에게 알림 (기존 방식 유지 - 클라이언트 호환성)
+      this.server
+        .to(`lecture:${lectureCode}:students`)
+        .emit('code:activeChanged', {
+          active: active,
+          lectureCode,
+          message: `모든 학생의 코드 편집이 ${active ? '활성화' : '비활성화'}되었습니다.`,
+        });
+
+      client.emit('code:allActiveChangedSuccess', {
+        success: true,
+        message: `모든 학생 코드 ${active ? '활성화' : '비활성화'} 성공`,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: '모든 학생 코드 활성화 상태 설정 중 오류 발생',
+        lectureCode,
+        error: error.message,
+      });
+
+      client.emit('code:allActiveChangedSuccess', {
+        success: false,
+        message: '모든 학생 코드 활성화 상태 설정 중 오류가 발생했습니다.',
+      });
+    }
+  }
+
+  // 학생 드론 활성화 상태 설정
+  @SubscribeMessage('drone:setActive')
+  async handleSetDroneActive(
+    @MessageBody()
+    data: { lectureCode: string; studentId: string; active: boolean },
+    @ConnectedSocket() client: Socket,
+  ) {
+    console.log('📥 drone:setActive 이벤트 수신:', data);
+    const { lectureCode, studentId, active } = data;
+
+    try {
+      this.logger.log({
+        message: '학생 드론 활성화 상태 설정',
+        lectureCode,
+        studentId,
+        active,
+        clientId: client.id,
+      });
+
+      // Redis에 드론 활성화 상태 저장
+      await this.redisService.saveStudentDroneActive(
+        lectureCode,
+        studentId,
+        active,
+      );
+
+      // 현재 학생의 모든 정보 가져오기
+      const studentsWithDetails =
+        await this.redisService.getStudentsWithDetails(lectureCode);
+
+      // IStudent 형태로 변환
+      const formattedStudents = Object.entries(studentsWithDetails).map(
+        ([studentId, details]) => ({
+          studentId,
+          name: (details as any).name,
+          code: (details as any).code,
+          droneStatus: (details as any).droneStatus,
+          codeActive: (details as any).codeActive,
+          droneActive: (details as any).droneActive,
+          isConnected: true,
+        }),
+      );
+
+      // 내부 이벤트 발생
+      this.eventsService.emitDroneActiveChanged({
+        lectureCode,
+        studentId,
+        active,
+        students: formattedStudents,
+      });
+
+      // 강사에게 알림
+      this.server
+        .to(this.getInstructorRoom(lectureCode))
+        .emit('drone:activeChanged', {
+          lectureCode,
+          studentId,
+          active,
+          students: formattedStudents,
+        });
+
+      // 학생에게 알림 (Socket.IO 직접 통신)
+      this.server
+        .to(`lecture:${lectureCode}:students`)
+        .emit('drone:activeChanged', {
+          active,
+          studentId,
+          lectureCode,
+          message: `드론 제어가 ${active ? '활성화' : '비활성화'}되었습니다.`,
+        });
+
+      client.emit('drone:activeChangedSuccess', {
+        success: true,
+        message: `학생 드론 ${active ? '활성화' : '비활성화'} 성공`,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: '학생 드론 활성화 상태 설정 중 오류 발생',
+        lectureCode,
+        studentId,
+        error: error.message,
+      });
+
+      client.emit('drone:activeChangedSuccess', {
+        success: false,
+        message: '학생 드론 활성화 상태 설정 중 오류가 발생했습니다.',
+      });
+    }
+  }
+
+  // 모든 학생 드론 활성화 상태 설정
+  @SubscribeMessage('drone:setAllActive')
+  async handleSetAllDroneActive(
+    @MessageBody()
+    data: { lectureCode: string; active: boolean },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const { lectureCode, active } = data;
+
+    try {
+      this.logger.log({
+        message: '모든 학생 드론 활성화 상태 설정',
+        lectureCode,
+        active,
+      });
+
+      // Redis에 모든 학생 드론 활성화 상태 저장
+      await this.redisService.setAllDroneActive(lectureCode, active);
+
+      // 현재 학생의 모든 정보 가져오기
+      const studentsWithDetails =
+        await this.redisService.getStudentsWithDetails(lectureCode);
+
+      // IStudent 형태로 변환
+      const formattedStudents = Object.entries(studentsWithDetails).map(
+        ([studentId, details]) => ({
+          studentId,
+          name: (details as any).name,
+          code: (details as any).code,
+          droneStatus: (details as any).droneStatus,
+          codeActive: (details as any).codeActive,
+          droneActive: (details as any).droneActive,
+          isConnected: true,
+        }),
+      );
+
+      // 내부 이벤트 발생 - 모든 학생 드론 활성화 상태 변경
+      this.logger.log({
+        message: '내부 이벤트 발생: drone.all.active.changed',
+        lectureCode,
+        active: active,
+      });
+      this.eventsService.emitAllDroneActiveChanged({
+        lectureCode,
+        active: active,
+        students: formattedStudents,
+      });
+
+      // 강사에게 알림
+      this.server
+        .to(this.getInstructorRoom(lectureCode))
+        .emit('drone:allActiveChanged', {
+          lectureCode,
+          active,
+          students: formattedStudents,
+        });
+
+      // 학생에게 알림 (기존 방식 유지 - 클라이언트 호환성)
+      this.server
+        .to(`lecture:${lectureCode}:students`)
+        .emit('drone:activeChanged', {
+          active: active,
+          lectureCode,
+          message: `모든 학생의 드론 제어가 ${active ? '활성화' : '비활성화'}되었습니다.`,
+        });
+
+      client.emit('drone:allActiveChangedSuccess', {
+        success: true,
+        message: `모든 학생 드론 ${active ? '활성화' : '비활성화'} 성공`,
+      });
+    } catch (error) {
+      this.logger.error({
+        message: '모든 학생 드론 활성화 상태 설정 중 오류 발생',
+        lectureCode,
+        error: error.message,
+      });
+
+      client.emit('drone:allActiveChangedSuccess', {
+        success: false,
+        message: '모든 학생 드론 활성화 상태 설정 중 오류가 발생했습니다.',
       });
     }
   }
