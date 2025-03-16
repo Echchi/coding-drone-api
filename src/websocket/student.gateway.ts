@@ -57,18 +57,22 @@ export class StudentGateway implements OnModuleInit {
   private async handleCodeActiveChangedEvent(data: any) {
     try {
       const { lectureCode, studentId, active } = data;
-      const studentsRoom = this.getStudentsRoom(lectureCode);
+      // 특정 학생의 개인 룸을 가져옴
+      const studentPersonalRoom = this.getStudentPersonalRoom(
+        lectureCode,
+        studentId,
+      );
 
       this.logger.log({
         message: '이벤트 수신: code.active.changed',
         lectureCode,
         studentId,
         active,
-        studentsRoom,
+        targetRoom: studentPersonalRoom,
       });
 
-      // 학생 방에 알림 전송
-      this.server.to(studentsRoom).emit('code:activeChanged', {
+      // 특정 학생에게만 알림 전송
+      this.server.to(studentPersonalRoom).emit('code:activeChanged', {
         active,
         studentId,
         lectureCode,
@@ -76,7 +80,7 @@ export class StudentGateway implements OnModuleInit {
       });
 
       this.logger.log({
-        message: '학생에게 코드 활성화 상태 변경 알림 전송 완료 (이벤트 경유)',
+        message: '특정 학생에게 코드 활성화 상태 변경 알림 전송 완료',
         lectureCode,
         studentId,
         active,
@@ -94,18 +98,22 @@ export class StudentGateway implements OnModuleInit {
   private async handleDroneActiveChangedEvent(data: any) {
     try {
       const { lectureCode, studentId, active } = data;
-      const studentsRoom = this.getStudentsRoom(lectureCode);
+      // 특정 학생의 개인 룸을 가져옴
+      const studentPersonalRoom = this.getStudentPersonalRoom(
+        lectureCode,
+        studentId,
+      );
 
       this.logger.log({
         message: '이벤트 수신: drone.active.changed',
         lectureCode,
         studentId,
         active,
-        studentsRoom,
+        targetRoom: studentPersonalRoom,
       });
 
-      // 학생 방에 알림 전송
-      this.server.to(studentsRoom).emit('drone:activeChanged', {
+      // 특정 학생에게만 알림 전송
+      this.server.to(studentPersonalRoom).emit('drone:activeChanged', {
         active,
         studentId,
         lectureCode,
@@ -113,7 +121,7 @@ export class StudentGateway implements OnModuleInit {
       });
 
       this.logger.log({
-        message: '학생에게 드론 활성화 상태 변경 알림 전송 완료 (이벤트 경유)',
+        message: '특정 학생에게 드론 활성화 상태 변경 알림 전송 완료',
         lectureCode,
         studentId,
         active,
@@ -215,6 +223,13 @@ export class StudentGateway implements OnModuleInit {
     return `lecture:${lectureCode}:students`;
   }
 
+  private getStudentPersonalRoom(
+    lectureCode: string,
+    studentId: string,
+  ): string {
+    return `lecture:${lectureCode}:student:${studentId}`;
+  }
+
   @SubscribeMessage('joinLecture')
   async handleJoinLecture(
     @MessageBody()
@@ -224,6 +239,10 @@ export class StudentGateway implements OnModuleInit {
     const { lectureCode, studentId, name } = data;
     const studentsRoom = this.getStudentsRoom(lectureCode);
     const lectureRoom = this.getLectureRoom(lectureCode);
+    const studentPersonalRoom = this.getStudentPersonalRoom(
+      lectureCode,
+      studentId,
+    );
 
     try {
       this.logger.log({
@@ -233,9 +252,10 @@ export class StudentGateway implements OnModuleInit {
         name,
       });
 
-      // 강의실과 학생 room에 입장
+      // 강의실과 학생 room에 입장 + 개인 룸 추가
       client.join(studentsRoom);
       client.join(lectureRoom);
+      client.join(studentPersonalRoom);
 
       // Redis에 학생 정보 저장
       await this.redisService.saveStudent(lectureCode, studentId, name);
@@ -515,6 +535,8 @@ export class StudentGateway implements OnModuleInit {
           code: (details as any).code || '',
           droneStatus: (details as any).droneStatus || 'disconnected',
           isConnected: true,
+          droneActive: (details as any).droneActive,
+          codeActive: (details as any).codeActive,
         }),
       );
 
@@ -690,15 +712,17 @@ export class StudentGateway implements OnModuleInit {
         active,
       });
 
-      // 학생 방에 알림 전송
-      this.server
-        .to(this.getStudentsRoom(lectureCode))
-        .emit('code:activeChanged', {
-          active,
-          studentId,
-          lectureCode,
-          message: `코드 편집이 ${active ? '활성화' : '비활성화'}되었습니다.`,
-        });
+      // 특정 학생에게만 알림 전송
+      const studentPersonalRoom = this.getStudentPersonalRoom(
+        lectureCode,
+        studentId,
+      );
+      this.server.to(studentPersonalRoom).emit('code:activeChanged', {
+        active,
+        studentId,
+        lectureCode,
+        message: `코드 편집이 ${active ? '활성화' : '비활성화'}되었습니다.`,
+      });
 
       return true;
     } catch (error) {
@@ -729,15 +753,17 @@ export class StudentGateway implements OnModuleInit {
         active,
       });
 
-      // 학생 방에 알림 전송
-      this.server
-        .to(this.getStudentsRoom(lectureCode))
-        .emit('drone:activeChanged', {
-          active,
-          studentId,
-          lectureCode,
-          message: `드론 제어가 ${active ? '활성화' : '비활성화'}되었습니다.`,
-        });
+      // 특정 학생에게만 알림 전송
+      const studentPersonalRoom = this.getStudentPersonalRoom(
+        lectureCode,
+        studentId,
+      );
+      this.server.to(studentPersonalRoom).emit('drone:activeChanged', {
+        active,
+        studentId,
+        lectureCode,
+        message: `드론 제어가 ${active ? '활성화' : '비활성화'}되었습니다.`,
+      });
 
       return true;
     } catch (error) {
